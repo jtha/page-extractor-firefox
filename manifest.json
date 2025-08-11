@@ -1,28 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "HTML Extractor",
-  "version": "1.0",
-  "description": "Extracts the HTML of the current page and sends it to an endpoint.",
+  "name": "HTML Extractor Sidebar",
+  "version": "2.2",
+  "description": "Opens a sidebar to extract specific HTML content from a page.",
   "icons": {
     "48": "icons/icon-48.png"
   },
   "permissions": [
     "activeTab",
-    "scripting",
-    "notifications"
+    "scripting"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
-  "action": {
-    "default_icon": "icons/icon-48.png",
-    "default_title": "Extract HTML"
-  },
   "background": {
     "scripts": ["background.js"]
   },
-  
+  "action": {
+    "default_icon": "icons/icon-48.png",
+    "default_title": "Toggle Extractor"
+  },
+  "sidebar_action": {
+    "default_panel": "sidebar/sidebar.html"
+  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; connect-src http://localhost:* http://127.0.0.1:*;"
   }
