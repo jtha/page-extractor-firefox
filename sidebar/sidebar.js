@@ -185,8 +185,17 @@ async function extractAndProcess() {
  * Sends the extracted data to the API and updates the UI with the response.
  */
 async function sendToApi(html, url) {
-  // ... (This function remains unchanged)
-  const endpoint = 'http://127.0.0.1:8000/html_extract';
+  // Get the API endpoint from browser storage, fallback to default if not set
+  let endpoint = 'http://127.0.0.1:8000/html_extract';
+  try {
+    const result = await browser.storage.local.get('apiEndpoint');
+    if (result.apiEndpoint) {
+      endpoint = result.apiEndpoint;
+    }
+  } catch (e) {
+    // If storage access fails, use default endpoint
+    console.warn('Could not retrieve API endpoint from storage, using default.', e);
+  }
   updateStatusMessage('Sending data to the server...', '');
 
   try {
