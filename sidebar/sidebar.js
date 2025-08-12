@@ -1,32 +1,86 @@
 /**
+ * --- UPDATED ---
  * This function is injected into the active tab to scrape the content.
+ * It now accepts an array of selectors and tries them in order.
+ * @param {string[]} selectors An array of CSS selectors to try.
  */
-function scrapeTargetElement() {
-  const selector = 'div.jobs-search__job-details--wrapper';
-  const targetElement = document.querySelector(selector);
-  return targetElement ? targetElement.outerHTML : null;
+function scrapeTargetElement(selectors) {
+  // Loop through the provided selectors
+  for (const selector of selectors) {
+    const targetElement = document.querySelector(selector);
+    // If an element is found with the current selector, return its HTML immediately
+    if (targetElement) {
+      return targetElement.outerHTML;
+    }
+  }
+  // If the loop finishes without finding any matching elements, return null.
+  return null;
 }
 
 /**
  * Renders a simple text message in the status area.
- * @param {string} message The message to display.
- * @param {'success'|'error'|''} type The type of message for styling.
  */
 function updateStatusMessage(message, type) {
+  // ... (This function remains unchanged)
   const statusDiv = document.getElementById('status-message');
-  statusDiv.innerHTML = `<p>${message}</p>`; // Use innerHTML to wrap in a paragraph
+  statusDiv.innerHTML = `<p>${message}</p>`;
   statusDiv.className = type;
 }
 
 /**
- * Takes the job data object and renders it as a formatted table in the sidebar.
- * @param {object} data The job data object from the API.
+ * Creates and returns the HTML string for a qualifications table.
+ */
+function createQualificationTable(title, qualificationsArray, headers) {
+  // ... (This function remains unchanged)
+  if (!qualificationsArray || qualificationsArray.length === 0) {
+    return '';
+  }
+
+  let matchFraction = '';
+  if (headers.length === 3) {
+    const totalMatches = qualificationsArray.filter(item => item.match === 1).length;
+    const totalRequirements = qualificationsArray.length;
+    matchFraction = `<span class="match-fraction">(${totalMatches}/${totalRequirements})</span>`;
+  }
+
+  let tableHtml = `<h4><span>${title}</span>${matchFraction}</h4>`;
+  tableHtml += `<table class="qualification-table" data-columns="${headers.length}">`;
+  tableHtml += '<thead><tr>';
+  headers.forEach(header => {
+    tableHtml += `<th>${header}</th>`;
+  });
+  tableHtml += '</tr></thead><tbody>';
+
+  for (const item of qualificationsArray) {
+    tableHtml += '<tr>';
+    if (headers.includes('Requirement')) {
+      tableHtml += `<td>${item.requirement || 'N/A'}</td>`;
+    }
+    if (headers.includes('Match')) {
+      const isMatch = item.match === 1;
+      const matchText = isMatch ? 'Yes' : 'No';
+      const matchClass = isMatch ? 'match-yes' : 'match-no';
+      tableHtml += `<td class="${matchClass}">${matchText}</td>`;
+    }
+    if (headers.includes('Match Reason')) {
+      tableHtml += `<td>${item.match_reason || 'N/A'}</td>`;
+    }
+    tableHtml += '</tr>';
+  }
+
+  tableHtml += '</tbody></table>';
+  return tableHtml;
+}
+
+/**
+ * Takes the job data object and renders it as a formatted set of tables.
  */
 function displayJobData(data) {
+  // ... (This function remains unchanged)
   const statusDiv = document.getElementById('status-message');
+  const descriptionId = "job-description-text";
   let description = data.job_description || "Not found.";
 
-  // A mapping from JSON keys to human-readable labels
   const keyMappings = {
     job_company: "Company",
     job_title: "Title",
@@ -39,20 +93,47 @@ function displayJobData(data) {
   for (const key in keyMappings) {
     if (data.hasOwnProperty(key)) {
       let value = data[key] || "N/A";
-      // Make the direct URL a clickable link that opens in a new tab
       if (key === 'job_url_direct' && value !== "N/A") {
-        value = `<a href="${value}" target="_blank">View Job</a>`;
+        const jobId = data.job_id || '';
+        const linkText = `View Job ${jobId}`.trim();
+        value = `<a href="${value}" target="_blank">${linkText}</a>`;
       }
       tableHtml += `<tr><td>${keyMappings[key]}</td><td>${value}</td></tr>`;
     }
   }
   tableHtml += '</table>';
 
-  // Add the description below the table
-  tableHtml += `<h4>Description</h4><pre class="job-description">${description}</pre>`;
+  tableHtml += `
+    <h4>
+      <span>Description</span>
+      <button id="copy-desc-btn" class="copy-button" title="Copy description to clipboard">Copy</button>
+    </h4>
+    <pre id="${descriptionId}" class="job-description">${description}</pre>
+  `;
+  
+  const threeColumn = ['Requirement', 'Match', 'Match Reason'];
+  const oneColumn = ['Requirement'];
+
+  tableHtml += createQualificationTable("Required Qualifications", data.required_qualifications, threeColumn);
+  tableHtml += createQualificationTable("Additional Qualifications", data.additional_qualifications, threeColumn);
+  tableHtml += createQualificationTable("Evaluated Qualifications", data.evaluated_qualifications, oneColumn);
 
   statusDiv.innerHTML = tableHtml;
-  statusDiv.className = 'success'; // Apply success styling to the container
+  statusDiv.className = 'success';
+
+  const copyBtn = document.getElementById('copy-desc-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const descriptionText = document.getElementById(descriptionId).textContent;
+      navigator.clipboard.writeText(descriptionText).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        copyBtn.textContent = 'Error!';
+      });
+    });
+  }
 }
 
 /**
@@ -71,17 +152,26 @@ async function extractAndProcess() {
     return;
   }
 
+  // --- NEW --- Define the list of selectors to try
+  const targetSelectors = [
+    'div.jobs-search__job-details--wrapper',
+    'div.jobs-semantic-search-job-details-wrapper'
+  ];
+
   try {
+    // --- UPDATED --- Pass the selectors array as an argument to the function
     const results = await browser.scripting.executeScript({
       target: { tabId: activeTab.id },
       func: scrapeTargetElement,
+      args: [targetSelectors] // Pass the array here
     });
+
     const htmlContent = results[0].result;
     if (htmlContent) {
       await sendToApi(htmlContent, activeTab.url);
     } else {
-      const selector = 'div.jobs-search__job-details--wrapper';
-      updateStatusMessage(`Error: The target element ('${selector}') was not found.`, 'error');
+      // --- UPDATED --- More informative error message
+      updateStatusMessage(`Error: Could not find any of the target elements on this page.`, 'error');
     }
   } catch (error) {
     console.error("Error during script execution:", error);
@@ -95,6 +185,7 @@ async function extractAndProcess() {
  * Sends the extracted data to the API and updates the UI with the response.
  */
 async function sendToApi(html, url) {
+  // ... (This function remains unchanged)
   const endpoint = 'http://127.0.0.1:8000/html_extract';
   updateStatusMessage('Sending data to the server...', '');
 
@@ -106,7 +197,6 @@ async function sendToApi(html, url) {
     });
     const responseData = await response.json();
     if (response.ok) {
-      // Instead of showing a simple message, render the data table
       displayJobData(responseData.data);
     } else {
       updateStatusMessage(`API Error (${response.status}): ${responseData.detail}`, 'error');
