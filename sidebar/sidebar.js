@@ -157,7 +157,21 @@ async function extractAndProcess() {
   extractBtn.disabled = true;
   updateStatusMessage('Extracting content...', '');
 
-  const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+  let activeTab;
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (!tabs || tabs.length === 0) {
+      updateStatusMessage("Error: No active tab found. Please select a tab and try again.", "error");
+      extractBtn.disabled = false;
+      return;
+    }
+    activeTab = tabs[0];
+  } catch (err) {
+    console.error("Error querying active tab:", err);
+    updateStatusMessage("Error: Could not get the active tab.", "error");
+    extractBtn.disabled = false;
+    return;
+  }
 
   if (!activeTab.url?.startsWith("http")) {
     updateStatusMessage("Error: This extension can only run on web pages (http/https).", "error");
