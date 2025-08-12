@@ -125,13 +125,26 @@ function displayJobData(data) {
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       const descriptionText = document.getElementById(descriptionId).textContent;
-      navigator.clipboard.writeText(descriptionText).then(() => {
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy text: ', err);
-        copyBtn.textContent = 'Error!';
-      });
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === 'function'
+      ) {
+        navigator.clipboard.writeText(descriptionText).then(() => {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy text: ', err);
+          if (err && err.name === 'NotAllowedError') {
+            copyBtn.textContent = 'Permission denied!';
+          } else {
+            copyBtn.textContent = 'Error!';
+          }
+        });
+      } else {
+        console.error('Clipboard API not available or insecure context.');
+        copyBtn.textContent = 'Clipboard unavailable!';
+      }
     });
   }
 }
