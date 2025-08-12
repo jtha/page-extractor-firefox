@@ -1,0 +1,167 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  padding: 10px;
+  color: #333;
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #0060df;
+  background-color: #0078e3;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+button:hover {
+  background-color: #0060df;
+}
+
+button:disabled {
+  background-color: #a0a0a0;
+  border-color: #888;
+  cursor: not-allowed;
+}
+
+#status-message {
+  padding: 10px;
+  border-radius: 4px;
+  word-wrap: break-word;
+}
+
+#status-message p {
+  margin: 0;
+}
+
+.success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+.error p {
+  color: #721c24;
+}
+
+/* --- MAIN DATA TABLE STYLING --- */
+.job-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+.job-data-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+.job-data-table td:first-child {
+  font-weight: 600;
+  color: #555;
+  width: 80px;
+}
+
+/* --- HEADING AND COPY BUTTON STYLING --- */
+h4 {
+  margin-top: 20px; /* Add more space above headings */
+  margin-bottom: 5px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.copy-button {
+  width: auto;
+  margin-bottom: 0;
+  padding: 2px 8px;
+  font-size: 12px;
+  background-color: #e9e9e9;
+  color: #333;
+  border: 1px solid #ccc;
+}
+.copy-button:hover {
+  background-color: #dcdcdc;
+  border-color: #bbb;
+}
+
+/* --- DESCRIPTION BOX STYLING --- */
+.job-description {
+  max-height: 250px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #f7f7f7;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #444;
+  border: 1px solid #e1e1e1;
+}
+
+/* --- NEW QUALIFICATION TABLE STYLING --- */
+.qualification-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px; /* Slightly smaller font for density */
+}
+
+.qualification-table th,
+.qualification-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+
+.qualification-table th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+
+/* Define column widths for better layout */
+.qualification-table th:nth-child(1),
+.qualification-table td:nth-child(1) {
+  width: 40%;
+}
+.qualification-table th:nth-child(2),
+.qualification-table td:nth-child(2) {
+  width: 15%;
+  text-align: center;
+}
+.qualification-table th:nth-child(3),
+.qualification-table td:nth-child(3) {
+  width: 45%;
+}
+
+
+/* --- NEW --- Color coding for the 'Match' status */
+.match-yes {
+  color: #28a745;
+  font-weight: bold;
+}
+.match-no {
+  color: #dc3545;
+  font-weight: bold;
+}
+.match-partial {
+  color: #fd7e14;
+  font-weight: bold;
+}
+
+/* --- NEW --- Styling for the match fraction */
+.match-fraction {
+  font-size: 13px;
+  font-weight: normal;
+  color: #666;
+  margin-left: 8px;
+}
