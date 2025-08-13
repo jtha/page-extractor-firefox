@@ -85,45 +85,78 @@ function renderJobDetails(data) {
   return detailsHtml;
 }
 
-// --- UPDATED FUNCTION ---
-// Renders the summary view and attaches all necessary event listeners.
-function renderJob(task) {
-  const jobItem = document.createElement('div');
-  jobItem.className = 'job-item';
-  jobItem.id = task.id;
+// Helpers to match Recent display
+function computeFractionsFromTaskData(data) {
+  const reqArr = Array.isArray(data?.required_qualifications) ? data.required_qualifications : [];
+  const addArr = Array.isArray(data?.additional_qualifications) ? data.additional_qualifications : [];
+  const reqMatched = reqArr.filter(i => i.match === 1 || i.match === true).length;
+  const addMatched = addArr.filter(i => i.match === 1 || i.match === true).length;
+  return {
+    req: { matched: reqMatched, total: reqArr.length },
+    add: { matched: addMatched, total: addArr.length }
+  };
+}
 
-  const title = task.data?.job_title || 'Processing...';
+function getFractionClass(matched, total) {
+  if (!total || total <= 0) return 'fraction-empty';
+  const r = matched / total;
+  if (r >= 0.75) return 'fraction-good';
+  if (r >= 0.5) return 'fraction-ok';
+  return 'fraction-bad';
+}
+
+function updateFractionEl(el, label, matched, total) {
+  if (!el) return;
+  el.textContent = `${label}: (${matched}/${total})`;
+  el.classList.remove('fraction-good','fraction-ok','fraction-bad','fraction-empty');
+  el.classList.add(getFractionClass(matched, total));
+}
+
+// Renders one-line row with expandable details (mirrors Recent page)
+function renderJob(task) {
+  const jobRow = document.createElement('div');
+  jobRow.className = 'job-row';
+  jobRow.id = task.id;
+
+  const title = task.data?.job_title || (task.status === 'completed' ? 'Untitled' : 'Processing...');
   const company = task.data?.job_company || '';
+  const location = task.data?.job_location || '';
   const displayTitle = company ? `${title} at ${company}` : title;
 
-  let errorHtml = '';
-  if (task.status === 'error') {
-    errorHtml = `<div class="job-error"><strong>Error:</strong> ${task.error}</div>`;
-  }
+  const when = task.completedAt || task.submittedAt || '';
+  const whenText = when ? new Date(when).toLocaleString() : '';
 
-  jobItem.innerHTML = `
-    <div class="job-header">
-      <div class="job-title">${displayTitle}</div>
-      <div class="job-status status-${task.status}">${task.status}</div>
+  const fr = computeFractionsFromTaskData(task.data || {});
+  const reqClass = getFractionClass(fr.req.matched, fr.req.total);
+  const addClass = getFractionClass(fr.add.matched, fr.add.total);
+
+  jobRow.innerHTML = `
+    <div class="row-header">
+      <div class="row-title">${displayTitle}</div>
+      <div class="row-right">
+        <div class="row-fractions">
+          <span class="fraction fraction-req ${reqClass}" title="Required matched/total">Req: (${fr.req.matched}/${fr.req.total})</span>
+          <span class="fraction fraction-add ${addClass}" title="Additional matched/total">Add: (${fr.add.matched}/${fr.add.total})</span>
+        </div>
+  <span class=\"status-dot status-${task.status}\" title=\"${task.status}\"></span>
+        <div class="row-location">${location || 'N/A'}</div>
+      </div>
     </div>
-    ${errorHtml}
+    <div class="row-submeta">${whenText}</div>
     <div class="details-container"></div>
   `;
 
-  const header = jobItem.querySelector('.job-header');
-  const detailsContainer = jobItem.querySelector('.details-container');
+  const header = jobRow.querySelector('.row-header');
+  const detailsContainer = jobRow.querySelector('.details-container');
 
   if (task.status === 'completed') {
-    header.classList.add('clickable');
     header.addEventListener('click', () => {
       const isVisible = detailsContainer.style.display === 'block';
       if (isVisible) {
         detailsContainer.style.display = 'none';
-        jobItem.classList.remove('expanded');
+        jobRow.classList.remove('expanded');
       } else {
         if (!detailsContainer.innerHTML) {
-          // --- NEW --- Add the task ID to the data object before rendering
-          // This makes it easy to generate unique IDs for sub-elements
           task.data.task_id = task.id;
           detailsContainer.innerHTML = renderJobDetails(task.data);
           const uniquePrefix = `details-${task.id}-${task.data.job_id || 'no-job-id'}`;
@@ -182,10 +215,14 @@ function renderJob(task) {
                   if (newRegenBtn) {
                     newRegenBtn.addEventListener('click', (e3) => {
                       e3.stopPropagation();
-                      // Recursively call handler by triggering click on original regen logic
-                      regenBtn.click();
                     });
                   }
+                  // Update collapsed fractions
+                  const updatedFr = computeFractionsFromTaskData(task.data);
+                  const reqEl = jobRow.querySelector('.fraction-req');
+                  const addEl = jobRow.querySelector('.fraction-add');
+                  updateFractionEl(reqEl, 'Req', updatedFr.req.matched, updatedFr.req.total);
+                  updateFractionEl(addEl, 'Add', updatedFr.add.matched, updatedFr.add.total);
                   regenStatusEl.textContent = 'Updated';
                 } else {
                   regenStatusEl.textContent = 'Failed';
@@ -202,12 +239,12 @@ function renderJob(task) {
           }
         }
         detailsContainer.style.display = 'block';
-        jobItem.classList.add('expanded');
+        jobRow.classList.add('expanded');
       }
     });
   }
 
-  return jobItem;
+  return jobRow;
 }
 
 async function renderAllJobs() {

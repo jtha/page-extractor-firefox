@@ -36,63 +36,33 @@ h1 {
   background-color: #c82333;
 }
 
-/* --- JOB ITEM STYLING --- */
-.job-item {
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  padding: 15px;
-  transition: box-shadow 0.2s ease-in-out;
-}
-.job-item.expanded {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.job-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.job-header.clickable {
-  cursor: pointer;
-}
-.job-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-.job-status {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
-  flex-shrink: 0; /* Prevents status from shrinking */
-}
+/* Row list (match Recent page) */
+.job-row { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s; }
+.job-row.expanded { box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.row-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
+.row-title { font-size: 16px; font-weight: 600; }
+.row-right { display: flex; gap: 12px; align-items: baseline; }
+.row-fractions { font-size: 12px; color: #444; display: flex; gap: 10px; }
+.fraction { background: #f1f5fb; border: 1px solid #d7e3f7; padding: 2px 6px; border-radius: 4px; }
+.fraction-req { border-color: #cce5ff; }
+.fraction-add { border-color: #e2e3e5; }
+.fraction-good { background: #e6f8ed; border-color: #c7eed8; color: #1e7e34; }
+.fraction-ok { background: #fff8e6; border-color: #ffe9a8; color: #996c00; }
+.fraction-bad { background: #fdecea; border-color: #f5c6cb; color: #a71d2a; }
+.fraction-empty { background: #f8f9fa; border-color: #e2e3e5; color: #6c757d; }
+.row-location { font-size: 13px; color: #555; }
+.row-submeta { font-size: 12px; color: #888; margin-top: 4px; }
+.job-url { font-size: 12px; color: #666; margin-top: 4px; word-break: break-all; }
+
+/* Status dot */
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; align-self: center; }
 .status-completed { background-color: #28a745; }
 .status-processing { background-color: #007bff; }
 .status-queued { background-color: #6c757d; }
 .status-error { background-color: #dc3545; }
-.job-url {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-  word-break: break-all;
-}
-.job-error {
-  color: #721c24;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 4px;
-}
 
-/* --- NEW --- DETAILS CONTAINER STYLING */
-.details-container {
-  display: none; /* Hidden by default */
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
+/* Details container */
+.details-container { display: none; margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee; }
 
 /* --- REUSED STYLES FOR DETAILS (from sidebar.css) --- */
 h4 {
