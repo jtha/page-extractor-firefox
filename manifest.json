@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Job Search Copilot",
-  "version": "2.2",
-  "description": "Opens a sidebar to extract specific HTML content from a page.",
+  "version": "3.0",
+  "description": "Asynchronously extracts job data and tracks history.",
   "icons": {
     "48": "icons/icon-48.png"
   },
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "http://*/*",

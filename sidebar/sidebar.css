@@ -93,7 +93,6 @@ h4 {
   border-color: #bbb;
 }
 
-/* --- DESCRIPTION BOX STYLING --- */
 .job-description {
   max-height: 250px;
   overflow-y: auto;
@@ -108,7 +107,6 @@ h4 {
   border: 1px solid #e1e1e1;
 }
 
-/* --- NEW QUALIFICATION TABLE STYLING --- */
 .qualification-table {
   width: 100%;
   border-collapse: collapse;
@@ -128,7 +126,6 @@ h4 {
   font-weight: 600;
 }
 
-/* Define column widths for better layout */
 .qualification-table th:nth-child(1),
 .qualification-table td:nth-child(1) {
   width: 40%;
@@ -143,8 +140,6 @@ h4 {
   width: 45%;
 }
 
-
-/* --- NEW --- Color coding for the 'Match' status */
 .match-yes {
   color: #28a745;
   font-weight: bold;
@@ -158,10 +153,31 @@ h4 {
   font-weight: bold;
 }
 
-/* --- NEW --- Styling for the match fraction */
 .match-fraction {
   font-size: 13px;
   font-weight: normal;
   color: #666;
   margin-left: 8px;
+}
+
+.secondary-button {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  margin-top: 5px;
+}
+.secondary-button:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.history-link {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  color: #0078e3;
+  text-decoration: none;
+  font-size: 14px;
+}
+.history-link:hover {
+  text-decoration: underline;
 }
