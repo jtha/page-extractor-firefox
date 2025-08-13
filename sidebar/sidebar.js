@@ -1,5 +1,7 @@
 const extractBtn = document.getElementById('extract-btn');
 const statusDiv = document.getElementById('status-message');
+const openRecentBtn = document.getElementById('open-recent-btn');
+const openHistoryBtn = document.getElementById('open-history-btn');
 
 extractBtn.addEventListener('click', async () => {
   extractBtn.disabled = true;
@@ -43,3 +45,13 @@ extractBtn.addEventListener('click', async () => {
     }, 1500);
   }
 });
+
+// Open Recent and History pages in new tabs
+function openRelativePage(path) {
+  // Sidebar is within sidebar/, go up one level to extension root
+  const url = browser.runtime.getURL(path);
+  browser.tabs.create({ url });
+}
+
+openRecentBtn?.addEventListener('click', () => openRelativePage('recent/recent.html'));
+openHistoryBtn?.addEventListener('click', () => openRelativePage('history/history.html'));

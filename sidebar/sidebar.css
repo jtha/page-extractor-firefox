@@ -193,3 +193,16 @@ h4 {
 .recent-link:hover {
   text-decoration: underline;
 }
+
+/* Footer action buttons */
+.footer-actions {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
+.secondary-button.small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
