@@ -181,3 +181,15 @@ h4 {
 .history-link:hover {
   text-decoration: underline;
 }
+
+.recent-link {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  color: #0078e3;
+  text-decoration: none;
+  font-size: 14px;
+}
+.recent-link:hover {
+  text-decoration: underline;
+}

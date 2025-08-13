@@ -129,7 +129,7 @@ h4 {
 .qualification-table th:nth-child(2), .qualification-table td:nth-child(2) { width: 15%; text-align: center; }
 .qualification-table th:nth-child(3), .qualification-table td:nth-child(3) { width: 45%; }
 .job-description {
-  max-height: 300px;
+  max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Recent Assessed Jobs</title>
+	<link rel="stylesheet" href="recent.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<style>
+		/* Small inline safeguard if CSS fails to load */
+		.hidden { display: none; }
+	</style>
+	</head>
+<body>
+	<div class="container">
+		<header>
+			<h1>Recent Assessed Jobs</h1>
+			<div class="controls">
+				<label for="days-back">Days:</label>
+				<input id="days-back" type="number" min="1" value="5" />
+				<button id="refresh-btn">Refresh</button>
+			</div>
+		</header>
+		<main id="recent-list-container"></main>
+	</div>
+	<script src="recent.js"></script>
+	</body>
+	</html>
