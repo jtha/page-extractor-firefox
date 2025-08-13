@@ -135,7 +135,33 @@ function renderJobDetails(data) {
 	return { html: detailsHtml, ids: { copyBtnId, descriptionId, regenBtnId, regenStatusId } };
 }
 
-function renderJobRow(job) {
+function computeFractions(jobSkills) {
+	const req = jobSkills.filter(s => s.job_skills_type === 'required_qualification');
+	const add = jobSkills.filter(s => s.job_skills_type === 'additional_qualification');
+	const reqMatched = req.filter(s => s.job_skills_match === 1 || s.job_skills_match === true).length;
+	const addMatched = add.filter(s => s.job_skills_match === 1 || s.job_skills_match === true).length;
+	return {
+		req: { matched: reqMatched, total: req.length },
+		add: { matched: addMatched, total: add.length },
+	};
+}
+
+function getFractionClass(matched, total) {
+	if (!total || total <= 0) return 'fraction-empty';
+	const r = matched / total;
+	if (r >= 0.75) return 'fraction-good';
+	if (r >= 0.5) return 'fraction-ok';
+	return 'fraction-bad';
+}
+
+function updateFractionEl(el, label, matched, total) {
+	if (!el) return;
+	el.textContent = `${label}: (${matched}/${total})`;
+	el.classList.remove('fraction-good','fraction-ok','fraction-bad','fraction-empty');
+	el.classList.add(getFractionClass(matched, total));
+}
+
+function renderJobRow(job, skillsMap) {
 	const row = document.createElement('div');
 	row.className = 'job-row';
 	const title = job.job_title || 'Untitled';
@@ -146,10 +172,22 @@ function renderJobRow(job) {
 	const lastAssessedAt = job.last_assessed_at ? new Date(job.last_assessed_at * 1000) : null;
 	const lastAssessedText = lastAssessedAt ? lastAssessedAt.toLocaleString() : '';
 
-	row.innerHTML = `
+	const jobSkills = (skillsMap && skillsMap.get(job.job_id)) || [];
+	const fr = computeFractions(jobSkills);
+
+		const reqClass = getFractionClass(fr.req.matched, fr.req.total);
+		const addClass = getFractionClass(fr.add.matched, fr.add.total);
+
+		row.innerHTML = `
 		<div class="row-header">
 			<div class="row-title">${displayTitle}</div>
-			<div class="row-location">${location}</div>
+			<div class="row-right">
+					<div class="row-fractions">
+						<span class="fraction fraction-req ${reqClass}" title="Required matched/total">Req: (${fr.req.matched}/${fr.req.total})</span>
+						<span class="fraction fraction-add ${addClass}" title="Additional matched/total">Add: (${fr.add.matched}/${fr.add.total})</span>
+				</div>
+				<div class="row-location">${location}</div>
+			</div>
 		</div>
 		<div class="row-submeta">${lastAssessedText}</div>
 		<div class="details-container"></div>
@@ -166,8 +204,8 @@ function renderJobRow(job) {
 		} else {
 			if (!detailsContainer.innerHTML) {
 				// Load skills once, then map for this job
-				const skillsMap = await fetchAllSkillsOnce();
-				const jobSkills = skillsMap.get(job.job_id) || [];
+			const skillsMap = await fetchAllSkillsOnce();
+			const jobSkills = skillsMap.get(job.job_id) || [];
 				const sections = mapSkillsToSections(jobSkills);
 				const data = {
 					job_id: job.job_id,
@@ -246,6 +284,13 @@ function renderJobRow(job) {
 								if (regenBtn2) {
 									regenBtn2.addEventListener('click', (evt) => evt.stopPropagation());
 								}
+
+							// Update collapsed header fractions
+							const newFr = computeFractions(updatedSkills);
+							const reqEl = row.querySelector('.fraction-req');
+							const addEl = row.querySelector('.fraction-add');
+							updateFractionEl(reqEl, 'Req', newFr.req.matched, newFr.req.total);
+							updateFractionEl(addEl, 'Add', newFr.add.matched, newFr.add.total);
 							} else {
 								regenStatusEl.textContent = 'Error';
 							}
@@ -272,14 +317,17 @@ async function loadRecent() {
 	const daysBack = Math.max(1, parseInt(daysBackInput.value || '5', 10));
 	try {
 		container.innerHTML = '<p class="empty">Loading…</p>';
-		const data = await fetchRecent(daysBack, 200);
+		const [data, skillsMap] = await Promise.all([
+			fetchRecent(daysBack, 200),
+			fetchAllSkillsOnce()
+		]);
 		if (!Array.isArray(data) || data.length === 0) {
 			container.innerHTML = '<p class="empty">No recent assessed jobs found.</p>';
 			return;
 		}
 		container.innerHTML = '';
 		for (const job of data) {
-			container.appendChild(renderJobRow(job));
+			container.appendChild(renderJobRow(job, skillsMap));
 		}
 	} catch (err) {
 		console.error('Failed to load recent jobs', err);
