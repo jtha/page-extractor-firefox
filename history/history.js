@@ -48,19 +48,13 @@ async function regenerateAssessment(jobId) {
 // Renders the detailed HTML, now including the copy & regenerate buttons.
 function renderJobDetails(data) {
   if (!data) return '<p>No details available.</p>';
-
   const uniquePrefix = `details-${data.task_id}-${data.job_id || 'no-job-id'}`;
   const descriptionId = `${uniquePrefix}-desc`;
   const copyBtnId = `${uniquePrefix}-copy-btn`;
   const regenBtnId = `${uniquePrefix}-regen-btn`;
   const regenStatusId = `${uniquePrefix}-regen-status`;
   let description = data.job_description || 'Not found.';
-
-  const keyMappings = {
-    job_company: 'Company', job_title: 'Title', job_salary: 'Salary',
-    job_location: 'Location', job_url_direct: 'Direct Link'
-  };
-
+  const keyMappings = { job_company: 'Company', job_title: 'Title', job_salary: 'Salary', job_location: 'Location', job_url_direct: 'Direct Link' };
   let detailsHtml = '<table class="job-data-table">';
   for (const key in keyMappings) {
     if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -74,23 +68,20 @@ function renderJobDetails(data) {
     }
   }
   detailsHtml += '</table>';
-
+  // Action bar now only regenerate + status
   detailsHtml += `
     <div class="details-action-bar">
-      <button id="${copyBtnId}" class="copy-button" title="Copy description">Copy</button>
       <button id="${regenBtnId}" class="regen-button" title="Regenerate assessment">Regenerate Assessment</button>
       <span id="${regenStatusId}" class="regen-status"></span>
     </div>
-    <h4><span>Description</span></h4>
+    <h4 class="description-header"><span>Description</span><button id="${copyBtnId}" class="copy-button" title="Copy description">Copy</button></h4>
     <pre id="${descriptionId}" class="job-description">${description}</pre>
   `;
-
   const threeColumn = ['Requirement', 'Match', 'Match Reason'];
   const oneColumn = ['Requirement'];
   detailsHtml += createQualificationTable('Required Qualifications', data.required_qualifications, threeColumn);
   detailsHtml += createQualificationTable('Additional Qualifications', data.additional_qualifications, threeColumn);
   detailsHtml += createQualificationTable('Evaluated Qualifications', data.evaluated_qualifications, oneColumn);
-
   return detailsHtml;
 }
 
