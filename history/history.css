@@ -37,8 +37,9 @@ h1 {
 }
 
 /* Row list (match Recent page) */
-.job-row { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s; }
-.job-row.expanded { box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.job-row { position: relative; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s, background-color 0.2s, border-color 0.2s; background-color: #fff; }
+.job-row.expanded { box-shadow: 0 6px 16px rgba(0,0,0,0.12); background-color: #f9fbff; border-color: #cfe0fb; }
+.job-row.expanded::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #2563eb; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
 .job-row.applied { border-color: #86d39b; }
 .job-row.applied { border: 4px solid #198754; }
 .row-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
@@ -136,6 +137,17 @@ h4 {
 .copy-button:hover {
   background-color: #dcdcdc;
   border-color: #bbb;
+}
+
+/* Sticky header for expanded rows */
+.job-row.expanded .row-header {
+  position: sticky;
+  top: calc(var(--nav-height, 44px) + 20px); /* nav height + page padding */
+  z-index: 5;
+  background: inherit;
+  padding: 12px;
+  margin: -12px -12px 0 -12px; /* keep visual alignment due to sticky stacking */
+  border-bottom: 1px solid #e6ecf5;
 }
 
 /* Action bar and Applied button styling to match Recent */
