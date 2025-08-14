@@ -13,7 +13,7 @@ let hideAppliedBtn = document.getElementById('hide-applied-btn');
 if (!hideAppliedBtn) {
   hideAppliedBtn = document.createElement('button');
   hideAppliedBtn.id = 'hide-applied-btn';
-  hideAppliedBtn.className = 'regen-button action-btn';
+  hideAppliedBtn.className = 'action-btn';
   hideAppliedBtn.textContent = 'Hide Applied';
   // Insert to the right of refreshBtn
   const parent = refreshBtn.parentNode;
