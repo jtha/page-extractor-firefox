@@ -44,6 +44,35 @@ async function regenerateAssessment(jobId) {
   return response.json();
 }
 
+// Add helper to call update_job_applied endpoint
+async function markApplied(jobId) {
+  const endpoint = 'http://127.0.0.1:8000/update_job_applied';
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job_id: jobId })
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `API Error: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function unmarkApplied(jobId) {
+  const endpoint = 'http://127.0.0.1:8000/update_job_unapplied';
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job_id: jobId })
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `API Error: ${response.status}`);
+  }
+  return response.json();
+}
+
 // --- UPDATED FUNCTION ---
 // Renders the detailed HTML, now including the copy & regenerate buttons.
 function renderJobDetails(data) {
@@ -53,6 +82,7 @@ function renderJobDetails(data) {
   const copyBtnId = `${uniquePrefix}-copy-btn`;
   const regenBtnId = `${uniquePrefix}-regen-btn`;
   const regenStatusId = `${uniquePrefix}-regen-status`;
+  const appliedBtnId = `${uniquePrefix}-applied-btn`;
   let description = data.job_description || 'Not found.';
   const keyMappings = { job_company: 'Company', job_title: 'Title', job_salary: 'Salary', job_location: 'Location', job_url_direct: 'Direct Link' };
   let detailsHtml = '<table class="job-data-table">';
@@ -68,11 +98,13 @@ function renderJobDetails(data) {
     }
   }
   detailsHtml += '</table>';
-  // Action bar now only regenerate + status
+  // Action bar with regenerate + applied toggle
+  const isApplied = data.job_applied === 1 || data.job_applied === true;
   detailsHtml += `
     <div class="details-action-bar">
       <button id="${regenBtnId}" class="regen-button" title="Regenerate assessment">Regenerate Assessment</button>
       <span id="${regenStatusId}" class="regen-status"></span>
+      <button id="${appliedBtnId}" class="regen-button applied-button" style="margin-left:auto" title="Toggle applied status">${isApplied ? 'Unmark Applied' : 'Applied to Job'}</button>
     </div>
     <h4 class="description-header"><span>Description</span><button id="${copyBtnId}" class="copy-button" title="Copy description">Copy</button></h4>
     <pre id="${descriptionId}" class="job-description">${description}</pre>
@@ -149,6 +181,11 @@ function renderJob(task) {
   const header = jobRow.querySelector('.row-header');
   const detailsContainer = jobRow.querySelector('.details-container');
 
+  // Initial applied visual state
+  if (task?.data?.job_applied === 1 || task?.data?.job_applied === true) {
+    jobRow.classList.add('applied');
+  }
+
   if (task.status === 'completed') {
     header.addEventListener('click', () => {
       const isVisible = detailsContainer.style.display === 'block';
@@ -164,6 +201,7 @@ function renderJob(task) {
           const descriptionEl = document.getElementById(`${uniquePrefix}-desc`);
           const regenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
           const regenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
+          const appliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
 
           if (copyBtn && descriptionEl) {
             copyBtn.addEventListener('click', (e) => {
@@ -200,6 +238,7 @@ function renderJob(task) {
                   const newDescriptionEl = document.getElementById(`${uniquePrefix}-desc`);
                   const newRegenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
                   const newRegenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
+                  const newAppliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
                   if (newCopyBtn && newDescriptionEl) {
                     newCopyBtn.addEventListener('click', (e2) => {
                       e2.stopPropagation();
@@ -215,6 +254,36 @@ function renderJob(task) {
                   if (newRegenBtn) {
                     newRegenBtn.addEventListener('click', (e3) => {
                       e3.stopPropagation();
+                    });
+                  }
+      if (newAppliedBtn && task.data?.job_id) {
+                    newAppliedBtn.addEventListener('click', async (e4) => {
+                      e4.stopPropagation();
+                      if (newAppliedBtn.disabled) return;
+                      const originalText2 = newAppliedBtn.textContent;
+                      const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
+                      newAppliedBtn.disabled = true;
+                      newAppliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
+                      try {
+                        if (currentlyApplied) {
+                          await unmarkApplied(task.data.job_id);
+                          task.data.job_applied = 0;
+                          newAppliedBtn.textContent = 'Applied to Job';
+        jobRow.classList.remove('applied');
+                        } else {
+                          await markApplied(task.data.job_id);
+                          task.data.job_applied = 1;
+                          newAppliedBtn.textContent = 'Unmark Applied';
+        jobRow.classList.add('applied');
+                        }
+                        await browser.storage.local.set({ [task.id]: task });
+                      } catch (err) {
+                        console.error('Toggle applied failed', err);
+                        newAppliedBtn.textContent = 'Error';
+                        setTimeout(() => { newAppliedBtn.textContent = originalText2; newAppliedBtn.disabled = false; }, 3000);
+                      } finally {
+                        newAppliedBtn.disabled = false;
+                      }
                     });
                   }
                   // Update collapsed fractions
@@ -234,6 +303,37 @@ function renderJob(task) {
                 regenBtn.disabled = false;
                 regenBtn.textContent = originalText;
                 setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
+              }
+            });
+          }
+
+    if (appliedBtn && task.data?.job_id) {
+            appliedBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              if (appliedBtn.disabled) return;
+              const originalText = appliedBtn.textContent;
+              const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
+              appliedBtn.disabled = true;
+              appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
+              try {
+                if (currentlyApplied) {
+                  await unmarkApplied(task.data.job_id);
+                  task.data.job_applied = 0;
+                  appliedBtn.textContent = 'Applied to Job';
+      jobRow.classList.remove('applied');
+                } else {
+                  await markApplied(task.data.job_id);
+                  task.data.job_applied = 1;
+                  appliedBtn.textContent = 'Unmark Applied';
+      jobRow.classList.add('applied');
+                }
+                await browser.storage.local.set({ [task.id]: task });
+              } catch (err) {
+                console.error('Toggle applied failed', err);
+                appliedBtn.textContent = 'Error';
+                setTimeout(() => { appliedBtn.textContent = originalText; appliedBtn.disabled = false; }, 3000);
+              } finally {
+                appliedBtn.disabled = false;
               }
             });
           }

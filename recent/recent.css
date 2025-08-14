@@ -42,6 +42,8 @@ h1 {
 /* Row list */
 .job-row { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s; }
 .job-row.expanded { box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.job-row.applied { border-color: #86d39b; }
+.job-row.applied { border-left: 4px solid #198754; }
 .row-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
 .row-title { font-size: 16px; font-weight: 600; }
 .row-right { display: flex; gap: 12px; align-items: baseline; }

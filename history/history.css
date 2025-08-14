@@ -39,6 +39,8 @@ h1 {
 /* Row list (match Recent page) */
 .job-row { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s; }
 .job-row.expanded { box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.job-row.applied { border-color: #86d39b; }
+.job-row.applied { border-left: 4px solid #198754; }
 .row-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
 .row-title { font-size: 16px; font-weight: 600; }
 .row-right { display: flex; gap: 12px; align-items: baseline; }
@@ -135,3 +137,10 @@ h4 {
   background-color: #dcdcdc;
   border-color: #bbb;
 }
+
+/* Action bar and Applied button styling to match Recent */
+.details-action-bar { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+.regen-button { background-color: #6c757d; border: 1px solid #6c757d; color: #fff; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+.regen-button:hover { background-color: #5a6268; border-color: #545b62; }
+.details-action-bar .applied-button { margin-left: auto; background-color: #198754; border: 1px solid #198754; color: #fff; }
+.details-action-bar .applied-button:hover { background-color: #157347; border-color: #146c43; }

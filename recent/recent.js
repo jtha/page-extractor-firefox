@@ -5,6 +5,7 @@ const daysBackInput = document.getElementById('days-back');
 // Cache for job skills by job_id to avoid repeated full fetches
 const state = {
 	skillsByJob: null, // Map of job_id -> array of skills
+	appliedByJob: new Map(), // job_id -> boolean applied
 };
 
 async function fetchRecent(daysBack = 5, limit = 200) {
@@ -111,6 +112,20 @@ async function markApplied(jobId) {
 	return response.json();
 }
 
+async function unmarkApplied(jobId) {
+	const endpoint = 'http://127.0.0.1:8000/update_job_unapplied';
+	const response = await fetch(endpoint, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ job_id: jobId })
+	});
+	if (!response.ok) {
+		const errorData = await response.json().catch(() => ({}));
+		throw new Error(errorData.detail || `API Error: ${response.status}`);
+	}
+	return response.json();
+}
+
 function renderJobDetails(data) {
 	if (!data) return '<p>No details available.</p>';
 	const uniquePrefix = `details-${data.job_id}-${Date.now()}`;
@@ -134,11 +149,12 @@ function renderJobDetails(data) {
 		}
 	}
 	detailsHtml += '</table>';
+	const isApplied = state.appliedByJob.get(data.job_id) === true;
 	detailsHtml += `
 		<div class="details-action-bar">
 			<button id="${regenBtnId}" class="regen-button" title="Regenerate assessment">Regenerate Assessment</button>
 			<span id="${regenStatusId}" class="regen-status"></span>
-			<button id="${appliedBtnId}" class="regen-button applied-button" style="margin-left:auto" title="Mark as applied">Applied to Job</button>
+			<button id="${appliedBtnId}" class="regen-button applied-button" style="margin-left:auto" title="Toggle applied status">${isApplied ? 'Unmark Applied' : 'Applied to Job'}</button>
 		</div>
 		<h4 class="description-header"><span>Description</span><button id="${copyBtnId}" class="copy-button" title="Copy description">Copy</button></h4>
 		<pre id="${descriptionId}" class="job-description">${description}</pre>
@@ -211,6 +227,11 @@ function renderJobRow(job, skillsMap) {
 
 	const header = row.querySelector('.row-header');
 	const detailsContainer = row.querySelector('.details-container');
+
+	// Initial applied visual state
+	if (state.appliedByJob.get(job.job_id) === true) {
+		row.classList.add('applied');
+	}
 
 	header.addEventListener('click', async () => {
 		const isVisible = detailsContainer.style.display === 'block';
@@ -322,23 +343,32 @@ function renderJobRow(job, skillsMap) {
 					});
 				}
 
-				if (appliedBtn) {
+		if (appliedBtn) {
 					appliedBtn.addEventListener('click', async (e) => {
 						e.stopPropagation();
 						if (appliedBtn.disabled) return;
-						const originalText = appliedBtn.textContent;
+			const originalText = appliedBtn.textContent;
+			const currentlyApplied = state.appliedByJob.get(job.job_id) === true;
 						appliedBtn.disabled = true;
-						appliedBtn.textContent = 'Marking...';
+						appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
 						try {
-							await markApplied(job.job_id);
-							appliedBtn.textContent = 'Applied ✓';
+							if (currentlyApplied) {
+								await unmarkApplied(job.job_id);
+								state.appliedByJob.set(job.job_id, false);
+								appliedBtn.textContent = 'Applied to Job';
+				row.classList.remove('applied');
+							} else {
+								await markApplied(job.job_id);
+								state.appliedByJob.set(job.job_id, true);
+								appliedBtn.textContent = 'Unmark Applied';
+				row.classList.add('applied');
+							}
 						} catch (err) {
-							console.error('Mark applied failed', err);
+							console.error('Toggle applied failed', err);
 							appliedBtn.textContent = 'Error';
 							setTimeout(() => { appliedBtn.textContent = originalText; }, 3000);
 						} finally {
-							// keep it disabled to avoid double-marking; re-enable if you prefer
-							appliedBtn.disabled = true;
+							appliedBtn.disabled = false;
 						}
 					});
 				}
@@ -362,6 +392,13 @@ async function loadRecent() {
 		if (!Array.isArray(data) || data.length === 0) {
 			container.innerHTML = '<p class="empty">No recent assessed jobs found.</p>';
 			return;
+		}
+		// Seed applied state map from payload
+		state.appliedByJob = new Map();
+		for (const job of data) {
+			if (job && job.job_id != null) {
+				state.appliedByJob.set(job.job_id, job.job_applied === 1 || job.job_applied === true);
+			}
 		}
 		container.innerHTML = '';
 		for (const job of data) {
