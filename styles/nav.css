@@ -6,19 +6,10 @@
   --nav-muted: #6b7280; /* gray-500 */
   --nav-accent: #2563eb; /* blue-600 */
   --nav-border: rgba(0, 0, 0, 0.08);
-  --nav-height: 52px;
+  --nav-height: 44px;
 }
 
-/* Optional dark mode override */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --nav-bg: #0b0f19;
-    --nav-fg: #e6edf3;
-    --nav-muted: #9da7b3;
-    --nav-accent: #3b82f6;
-    --nav-border: rgba(255, 255, 255, 0.08);
-  }
-}
+/* Optional dark mode override removed to keep nav light consistently */
 
 /* Ensure the nav sits flush with the top and edges */
 html, body { margin: 0; padding: 0; }
@@ -31,11 +22,12 @@ html, body { margin: 0; padding: 0; }
   background: var(--nav-bg);
   border-bottom: 1px solid var(--nav-border);
   box-shadow: 0 1px 0 var(--nav-border);
-  width: 100%;
+  /* Make the bar extend edge-to-edge even when the page body uses padding: 20px */
+  margin: -20px -20px 0 -20px;
 }
 
 .top-nav .nav-inner {
-  max-width: 960px;
+  max-width: 900px; /* match page container for perfect alignment */
   margin: 0 auto;
   height: 100%;
   display: flex;
@@ -64,7 +56,7 @@ html, body { margin: 0; padding: 0; }
 .top-nav .nav-links a {
   display: inline-flex;
   align-items: center;
-  height: 34px;
+  height: 32px;
   padding: 0 12px;
   border-radius: 8px;
   color: var(--nav-fg);
@@ -80,8 +72,8 @@ html, body { margin: 0; padding: 0; }
 
 .top-nav .nav-links a[aria-current="page"] {
   color: var(--nav-fg);
-  background: rgba(59, 130, 246, 0.15);
-  outline: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(0, 0, 0, 0.05); /* neutral subtle highlight */
+  outline: 1px solid rgba(0, 0, 0, 0.10);
 }
 
 .top-nav .spacer {
