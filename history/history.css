@@ -21,6 +21,21 @@ header {
 	padding-bottom: 15px;
 	margin-bottom: 20px;
 }
+#refresh-btn {
+  background-color: #0078e3;
+  color: white;
+  border: 1px solid #0060df;
+}
+#refresh-btn:hover { background-color: #0060df; }
+
+/* Group controls on the right side of the header */
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto; /* push controls to the right in a flex header */
+}
+
 h1 {
 	margin: 0;
 	font-size: 24px;
@@ -31,12 +46,9 @@ h1 {
 	align-items: center;
 }
 #refresh-btn {
-	background-color: #0078e3;
-	color: white;
-	border: 1px solid #0060df;
-	padding: 6px 12px;
-	border-radius: 4px;
-	cursor: pointer;
+  background-color: #0078e3;
+  color: white;
+  border: 1px solid #0060df;
 }
 #refresh-btn:hover { background-color: #0060df; }
 
@@ -47,6 +59,14 @@ h1 {
   border-radius: 5px;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
+}
+#refresh-btn.action-btn,
+#hide-applied-btn.action-btn {
+  display: inline-block;
+  box-sizing: border-box;
+  font-size: 15px;
+  padding: 8px 15px;
+  border-radius: 5px;
 }
 #refresh-btn {
   background-color: #0078e3;

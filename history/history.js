@@ -5,6 +5,27 @@ const container = document.getElementById('history-list-container');
 const refreshBtn = document.getElementById('refresh-btn');
 const daysBackInput = document.getElementById('days-back');
 
+// Ensure controls container exists and contains the refresh button, hideAppliedBtn, and daysBackInput
+let controls = document.querySelector('.controls');
+if (!controls) {
+  controls = document.createElement('div');
+  controls.className = 'controls';
+  // insert header's right side: find header and append controls
+  const header = document.querySelector('header');
+  if (header) header.appendChild(controls);
+}
+
+// Move refreshBtn and daysBackInput into controls if not already
+if (refreshBtn && refreshBtn.parentNode !== controls) {
+  refreshBtn.classList.add('action-btn');
+  controls.appendChild(refreshBtn);
+}
+
+// daysBackInput may be an input element; ensure it has a wrapper or move it
+if (daysBackInput && daysBackInput.parentNode !== controls) {
+  controls.appendChild(daysBackInput);
+}
+
 // Ensure both buttons have .action-btn for consistent sizing
 refreshBtn.classList.add('action-btn');
 
@@ -15,13 +36,8 @@ if (!hideAppliedBtn) {
   hideAppliedBtn.id = 'hide-applied-btn';
   hideAppliedBtn.className = 'action-btn';
   hideAppliedBtn.textContent = 'Hide Applied';
-  // Insert to the right of refreshBtn
-  const parent = refreshBtn.parentNode;
-  if (refreshBtn.nextSibling) {
-    parent.insertBefore(hideAppliedBtn, refreshBtn.nextSibling);
-  } else {
-    parent.appendChild(hideAppliedBtn);
-  }
+  // Insert hideAppliedBtn after refreshBtn inside controls
+  controls.insertBefore(hideAppliedBtn, refreshBtn.nextSibling || null);
 }
 
 const state = {
