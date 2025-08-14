@@ -1,23 +1,27 @@
 /* Top navigation bar styles (shared across extension pages) */
 :root {
-  --nav-bg: #0b0f19;
-  --nav-fg: #e6edf3;
-  --nav-muted: #9da7b3;
-  --nav-accent: #3b82f6;
-  --nav-border: rgba(255, 255, 255, 0.08);
+  /* Light by default to better match typical page styling */
+  --nav-bg: #ffffff;
+  --nav-fg: #111827; /* gray-900 */
+  --nav-muted: #6b7280; /* gray-500 */
+  --nav-accent: #2563eb; /* blue-600 */
+  --nav-border: rgba(0, 0, 0, 0.08);
   --nav-height: 52px;
 }
 
-/* Respect user color scheme; you can customize further later */
-@media (prefers-color-scheme: light) {
+/* Optional dark mode override */
+@media (prefers-color-scheme: dark) {
   :root {
-    --nav-bg: #ffffff;
-    --nav-fg: #0b1220;
-    --nav-muted: #4a5568;
-    --nav-accent: #2563eb;
-    --nav-border: rgba(0, 0, 0, 0.08);
+    --nav-bg: #0b0f19;
+    --nav-fg: #e6edf3;
+    --nav-muted: #9da7b3;
+    --nav-accent: #3b82f6;
+    --nav-border: rgba(255, 255, 255, 0.08);
   }
 }
+
+/* Ensure the nav sits flush with the top and edges */
+html, body { margin: 0; padding: 0; }
 
 .top-nav {
   position: sticky;
@@ -27,6 +31,7 @@
   background: var(--nav-bg);
   border-bottom: 1px solid var(--nav-border);
   box-shadow: 0 1px 0 var(--nav-border);
+  width: 100%;
 }
 
 .top-nav .nav-inner {
