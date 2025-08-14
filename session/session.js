@@ -10,11 +10,7 @@ if (!hideAppliedBtn) {
   hideAppliedBtn.className = 'regen-button';
   hideAppliedBtn.textContent = 'Hide Applied';
   const parent = clearSessionBtn.parentNode;
-  if (clearSessionBtn.nextSibling) {
-    parent.insertBefore(hideAppliedBtn, clearSessionBtn.nextSibling);
-  } else {
-    parent.appendChild(hideAppliedBtn);
-  }
+  parent.insertBefore(hideAppliedBtn, clearSessionBtn.nextSibling);
 }
 
 const state = {
