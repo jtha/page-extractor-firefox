@@ -1,14 +1,36 @@
 // History page script (migrated from Recent)
+
 const container = document.getElementById('history-list-container');
 const refreshBtn = document.getElementById('refresh-btn');
 const daysBackInput = document.getElementById('days-back');
+
+// Add toggle button for hiding applied jobs
+let hideAppliedBtn = document.getElementById('hide-applied-btn');
+if (!hideAppliedBtn) {
+  hideAppliedBtn = document.createElement('button');
+  hideAppliedBtn.id = 'hide-applied-btn';
+  hideAppliedBtn.className = 'regen-button';
+  hideAppliedBtn.textContent = 'Hide Applied';
+  // Insert to the left of daysBackInput
+  const parent = daysBackInput.parentNode;
+  parent.insertBefore(hideAppliedBtn, daysBackInput);
+}
 
 const state = {
   skillsByJob: null,
   appliedByJob: new Map(),
   // cache skills per daysBack to avoid refetching when unchanged
   skillsCacheByDays: new Map(),
+  hideApplied: false,
 };
+
+if (hideAppliedBtn) {
+  hideAppliedBtn.addEventListener('click', () => {
+    state.hideApplied = !state.hideApplied;
+    hideAppliedBtn.textContent = state.hideApplied ? 'Show Applied' : 'Hide Applied';
+    loadHistory();
+  });
+}
 
 async function fetchHistory(daysBack = 3, limit = 200) {
   const endpoint = `http://127.0.0.1:8000/jobs_recent?days_back=${encodeURIComponent(daysBack)}&limit=${encodeURIComponent(limit)}`;
@@ -406,7 +428,11 @@ async function loadHistory() {
       }
     }
     container.innerHTML = '';
-    for (const job of data) {
+    let jobsToRender = data;
+    if (state.hideApplied) {
+      jobsToRender = jobsToRender.filter(job => !(job.job_applied === 1 || job.job_applied === true));
+    }
+    for (const job of jobsToRender) {
       container.appendChild(renderJobRow(job, skillsMap));
     }
   } catch (err) {
