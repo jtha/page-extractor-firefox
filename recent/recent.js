@@ -1,4 +1,4 @@
-const container = document.getElementById('recent-list-container');
+const container = document.getElementById('history-list-container');
 const refreshBtn = document.getElementById('refresh-btn');
 const daysBackInput = document.getElementById('days-back');
 
@@ -8,7 +8,7 @@ const state = {
 	appliedByJob: new Map(), // job_id -> boolean applied
 };
 
-async function fetchRecent(daysBack = 5, limit = 200) {
+async function fetchHistory(daysBack = 5, limit = 200) {
 	const endpoint = `http://127.0.0.1:8000/jobs_recent?days_back=${encodeURIComponent(daysBack)}&limit=${encodeURIComponent(limit)}`;
 	const response = await fetch(endpoint, { method: 'GET' });
 	if (!response.ok) {
@@ -381,16 +381,16 @@ function renderJobRow(job, skillsMap) {
 	return row;
 }
 
-async function loadRecent() {
+async function loadHistory() {
 	const daysBack = Math.max(1, parseInt(daysBackInput.value || '5', 10));
 	try {
 		container.innerHTML = '<p class="empty">Loading…</p>';
 		const [data, skillsMap] = await Promise.all([
-			fetchRecent(daysBack, 200),
+			fetchHistory(daysBack, 200),
 			fetchAllSkillsOnce()
 		]);
 		if (!Array.isArray(data) || data.length === 0) {
-			container.innerHTML = '<p class="empty">No recent assessed jobs found.</p>';
+			container.innerHTML = '<p class="empty">No history found.</p>';
 			return;
 		}
 		// Seed applied state map from payload
@@ -405,10 +405,10 @@ async function loadRecent() {
 			container.appendChild(renderJobRow(job, skillsMap));
 		}
 	} catch (err) {
-		console.error('Failed to load recent jobs', err);
-		container.innerHTML = `<p class="empty">${err.message || 'Failed to load recent jobs.'}</p>`;
+	console.error('Failed to load history', err);
+	container.innerHTML = `<p class="empty">${err.message || 'Failed to load history.'}</p>`;
 	}
 }
 
-refreshBtn.addEventListener('click', loadRecent);
-document.addEventListener('DOMContentLoaded', loadRecent);
+refreshBtn.addEventListener('click', loadHistory);
+document.addEventListener('DOMContentLoaded', loadHistory);

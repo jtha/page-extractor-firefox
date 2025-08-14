@@ -1,7 +1,7 @@
 const extractBtn = document.getElementById('extract-btn');
 const statusDiv = document.getElementById('status-message');
-const openRecentBtn = document.getElementById('open-recent-btn');
 const openHistoryBtn = document.getElementById('open-history-btn');
+const openSessionBtn = document.getElementById('open-session-btn');
 
 extractBtn.addEventListener('click', async () => {
   extractBtn.disabled = true;
@@ -53,5 +53,5 @@ function openRelativePage(path) {
   browser.tabs.create({ url });
 }
 
-openRecentBtn?.addEventListener('click', () => openRelativePage('recent/recent.html'));
 openHistoryBtn?.addEventListener('click', () => openRelativePage('history/history.html'));
+openSessionBtn?.addEventListener('click', () => openRelativePage('session/session.html'));

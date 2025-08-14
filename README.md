@@ -1,20 +1,20 @@
 # page-extractor-firefox
 
-Firefox extension to extract a job page, send it to a local API for assessment, and review results in History/Recent views.
+Firefox extension to extract a job page, send it to a local API for assessment, and review results in History/Session views.
 
 This extension provides:
 
 - A sidebar with an Extract button to submit the current tab for processing
-- A History page showing all tasks you have submitted (with status, details, and actions)
-- A Recent page listing the most recently assessed jobs coming directly from the backend
+- A History page listing the most recently assessed jobs coming directly from the backend
+- A Session page showing all tasks you have submitted (with status, details, and actions) stored locally
 
 
 ## How it works
 
 - When you click Extract in the sidebar, the extension creates a task object and saves it to `browser.storage.local` with a unique `id`, the `url`, timestamps, and `status`.
 - The background script (see `background.js`) handles the `processJob` message to process the page and eventually populate the task’s `data` with parsed job details and assessment information.
-- The History page (`history/history.html` + `history.js`) reads tasks from `browser.storage.local`, lets you expand each job for details, copy descriptions, re-run assessments, and toggle “applied” status.
-- The Recent page (`recent/recent.html` + `recent.js`) fetches the latest assessed jobs directly from your local API and displays per-job match fractions and details on demand.
+- The History page (`history/history.html` + `history.js`) fetches the latest assessed jobs directly from your local API and displays per-job match fractions and details on demand.
+- The Session page (`session/session.html` + `session.js`) reads tasks from `browser.storage.local`, lets you expand each job for details, copy descriptions, re-run assessments, and toggle “applied” status.
 
 
 ## Prerequisites
@@ -38,15 +38,15 @@ Open the extension sidebar and you’ll see:
 - Extract: Queues the current active tab for processing.
 	- Only works on regular HTTP(S) pages.
 	- Creates a task: `{ id, url, status: 'queued', submittedAt, data: null }` and sends a message to the background.
-- Recent: Opens the Recent page in a new tab.
 - History: Opens the History page in a new tab.
+- Session: Opens the Session page in a new tab.
 
 Status messages appear in the sidebar to confirm submission or show errors (e.g., trying to run on a non-webpage).
 
 
-## History page
+## Session page
 
-The History view reads all tasks from `browser.storage.local` and shows a list sorted by submission time.
+The Session view reads all tasks from `browser.storage.local` and shows a list sorted by submission time.
 
 For each entry:
 
@@ -71,9 +71,9 @@ Visuals:
 - Status dot reflects `task.status` (e.g., `queued`, `processing`, `completed`).
 
 
-## Recent page
+## History page
 
-The Recent view pulls data directly from the local API and shows the most recently assessed jobs.
+The History view pulls data directly from the local API and shows the most recently assessed jobs.
 
 Controls:
 
@@ -88,15 +88,15 @@ Per-row display:
 
 Applied state:
 
-- The Recent view seeds `applied` state from the API payload (`job_applied`), and locally toggling Applied updates both UI and backend via the endpoints below.
+- The History view seeds `applied` state from the API payload (`job_applied`), and locally toggling Applied updates both UI and backend via the endpoints below.
 
 
 ## Endpoints used (local API)
 
 The extension expects these endpoints at `http://127.0.0.1:8000`:
 
-- `GET /jobs_recent?days_back=<int>&limit=<int>` — list of recent assessed jobs
-- `GET /job_skills` — all job skill rows; the Recent page caches and maps per job
+- `GET /jobs_recent?days_back=<int>&limit=<int>` — list of recently assessed jobs
+- `GET /job_skills` — all job skill rows; the History page caches and maps per job
 - `POST /regenerate_job_assessment` with body `{ job_id }` — re-run assessment and return updated job data
 - `POST /update_job_applied` with body `{ job_id }` — mark job as applied
 - `POST /update_job_unapplied` with body `{ job_id }` — unmark job as applied
@@ -147,9 +147,9 @@ The History view listens to `browser.storage.onChanged` to auto-refresh when tas
 ## Development notes
 
 - Core scripts documented here:
-	- `sidebar/sidebar.js` — Sidebar UI, task creation, and navigation to Recent/History
-	- `history/history.js` — Renders stored tasks, details, actions, and live updates
-	- `recent/recent.js` — Fetches from API, caches skills, renders rows and details
-- Supporting assets: `styles/`, `icons/`, and HTML files under `history/`, `recent/`, `sidebar/`.
+	- `sidebar/sidebar.js` — Sidebar UI, task creation, and navigation to History/Session
+	- `session/session.js` — Renders stored tasks, details, actions, and live updates
+	- `history/history.js` — Fetches from API, caches skills, renders rows and details
+- Supporting assets: `styles/`, `icons/`, and HTML files under `history/`, `session/`, `sidebar/`.
 - Background workflow is handled in `background.js`.
 

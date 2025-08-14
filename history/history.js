@@ -1,5 +1,60 @@
-const jobListContainer = document.getElementById('job-list-container');
-const clearHistoryBtn = document.getElementById('clear-history-btn');
+// History page script (migrated from Recent)
+const container = document.getElementById('history-list-container');
+const refreshBtn = document.getElementById('refresh-btn');
+const daysBackInput = document.getElementById('days-back');
+
+const state = {
+  skillsByJob: null,
+  appliedByJob: new Map(),
+};
+
+async function fetchHistory(daysBack = 5, limit = 200) {
+  const endpoint = `http://127.0.0.1:8000/jobs_recent?days_back=${encodeURIComponent(daysBack)}&limit=${encodeURIComponent(limit)}`;
+  const response = await fetch(endpoint, { method: 'GET' });
+  if (!response.ok) {
+    let msg = `API Error: ${response.status}`;
+    try { const d = await response.json(); if (d?.detail) msg = d.detail; } catch {}
+    throw new Error(msg);
+  }
+  return response.json();
+}
+
+async function fetchAllSkillsOnce() {
+  if (state.skillsByJob) return state.skillsByJob;
+  const endpoint = 'http://127.0.0.1:8000/job_skills';
+  const response = await fetch(endpoint, { method: 'GET' });
+  if (!response.ok) {
+    let msg = `API Error: ${response.status}`;
+    try { const d = await response.json(); if (d?.detail) msg = d.detail; } catch {}
+    throw new Error(msg);
+  }
+  const rows = await response.json();
+  const map = new Map();
+  for (const r of rows) {
+    const list = map.get(r.job_id) || [];
+    list.push(r);
+    map.set(r.job_id, list);
+  }
+  state.skillsByJob = map;
+  return map;
+}
+
+function mapSkillsToSections(skills) {
+  const required = [];
+  const additional = [];
+  const evaluated = [];
+  for (const i of skills || []) {
+    const entry = {
+      requirement: i.job_skills_atomic_string,
+      match: i.job_skills_match,
+      match_reason: i.job_skills_match_reasoning,
+    };
+    if (i.job_skills_type === 'required_qualification') required.push(entry);
+    else if (i.job_skills_type === 'additional_qualification') additional.push(entry);
+    else if (i.job_skills_type === 'evaluated_qualification') evaluated.push({ requirement: i.job_skills_atomic_string });
+  }
+  return { required, additional, evaluated };
+}
 
 function createQualificationTable(title, qualificationsArray, headers) {
   if (!qualificationsArray || qualificationsArray.length === 0) return '';
@@ -29,7 +84,6 @@ function createQualificationTable(title, qualificationsArray, headers) {
   return tableHtml;
 }
 
-// Add helper to call regenerate endpoint
 async function regenerateAssessment(jobId) {
   const endpoint = 'http://127.0.0.1:8000/regenerate_job_assessment';
   const response = await fetch(endpoint, {
@@ -44,7 +98,6 @@ async function regenerateAssessment(jobId) {
   return response.json();
 }
 
-// Add helper to call update_job_applied endpoint
 async function markApplied(jobId) {
   const endpoint = 'http://127.0.0.1:8000/update_job_applied';
   const response = await fetch(endpoint, {
@@ -73,11 +126,9 @@ async function unmarkApplied(jobId) {
   return response.json();
 }
 
-// --- UPDATED FUNCTION ---
-// Renders the detailed HTML, now including the copy & regenerate buttons.
 function renderJobDetails(data) {
   if (!data) return '<p>No details available.</p>';
-  const uniquePrefix = `details-${data.task_id}-${data.job_id || 'no-job-id'}`;
+  const uniquePrefix = `details-${data.job_id}-${Date.now()}`;
   const descriptionId = `${uniquePrefix}-desc`;
   const copyBtnId = `${uniquePrefix}-copy-btn`;
   const regenBtnId = `${uniquePrefix}-regen-btn`;
@@ -98,8 +149,7 @@ function renderJobDetails(data) {
     }
   }
   detailsHtml += '</table>';
-  // Action bar with regenerate + applied toggle
-  const isApplied = data.job_applied === 1 || data.job_applied === true;
+  const isApplied = state.appliedByJob.get(data.job_id) === true;
   detailsHtml += `
     <div class="details-action-bar">
       <button id="${regenBtnId}" class="regen-button" title="Regenerate assessment">Regenerate Assessment</button>
@@ -114,18 +164,17 @@ function renderJobDetails(data) {
   detailsHtml += createQualificationTable('Required Qualifications', data.required_qualifications, threeColumn);
   detailsHtml += createQualificationTable('Additional Qualifications', data.additional_qualifications, threeColumn);
   detailsHtml += createQualificationTable('Evaluated Qualifications', data.evaluated_qualifications, oneColumn);
-  return detailsHtml;
+  return { html: detailsHtml, ids: { copyBtnId, descriptionId, regenBtnId, regenStatusId, appliedBtnId } };
 }
 
-// Helpers to match Recent display
-function computeFractionsFromTaskData(data) {
-  const reqArr = Array.isArray(data?.required_qualifications) ? data.required_qualifications : [];
-  const addArr = Array.isArray(data?.additional_qualifications) ? data.additional_qualifications : [];
-  const reqMatched = reqArr.filter(i => i.match === 1 || i.match === true).length;
-  const addMatched = addArr.filter(i => i.match === 1 || i.match === true).length;
+function computeFractions(jobSkills) {
+  const req = jobSkills.filter(s => s.job_skills_type === 'required_qualification');
+  const add = jobSkills.filter(s => s.job_skills_type === 'additional_qualification');
+  const reqMatched = req.filter(s => s.job_skills_match === 1 || s.job_skills_match === true).length;
+  const addMatched = add.filter(s => s.job_skills_match === 1 || s.job_skills_match === true).length;
   return {
-    req: { matched: reqMatched, total: reqArr.length },
-    add: { matched: addMatched, total: addArr.length }
+    req: { matched: reqMatched, total: req.length },
+    add: { matched: addMatched, total: add.length },
   };
 }
 
@@ -144,237 +193,216 @@ function updateFractionEl(el, label, matched, total) {
   el.classList.add(getFractionClass(matched, total));
 }
 
-// Renders one-line row with expandable details (mirrors Recent page)
-function renderJob(task) {
-  const jobRow = document.createElement('div');
-  jobRow.className = 'job-row';
-  jobRow.id = task.id;
-
-  const title = task.data?.job_title || (task.status === 'completed' ? 'Untitled' : 'Processing...');
-  const company = task.data?.job_company || '';
-  const location = task.data?.job_location || '';
+function renderJobRow(job, skillsMap) {
+  const row = document.createElement('div');
+  row.className = 'job-row';
+  const title = job.job_title || 'Untitled';
+  const company = job.job_company || '';
+  const location = job.job_location || 'N/A';
   const displayTitle = company ? `${title} at ${company}` : title;
 
-  const when = task.completedAt || task.submittedAt || '';
-  const whenText = when ? new Date(when).toLocaleString() : '';
+  const lastAssessedAt = job.last_assessed_at ? new Date(job.last_assessed_at * 1000) : null;
+  const lastAssessedText = lastAssessedAt ? lastAssessedAt.toLocaleString() : '';
 
-  const fr = computeFractionsFromTaskData(task.data || {});
-  const reqClass = getFractionClass(fr.req.matched, fr.req.total);
-  const addClass = getFractionClass(fr.add.matched, fr.add.total);
+  const jobSkills = (skillsMap && skillsMap.get(job.job_id)) || [];
+  const fr = computeFractions(jobSkills);
 
-  jobRow.innerHTML = `
+    const reqClass = getFractionClass(fr.req.matched, fr.req.total);
+    const addClass = getFractionClass(fr.add.matched, fr.add.total);
+
+    row.innerHTML = `
     <div class="row-header">
       <div class="row-title">${displayTitle}</div>
       <div class="row-right">
-        <div class="row-fractions">
-          <span class="fraction fraction-req ${reqClass}" title="Required matched/total">Req: (${fr.req.matched}/${fr.req.total})</span>
-          <span class="fraction fraction-add ${addClass}" title="Additional matched/total">Add: (${fr.add.matched}/${fr.add.total})</span>
+          <div class="row-fractions">
+            <span class="fraction fraction-req ${reqClass}" title="Required matched/total">Req: (${fr.req.matched}/${fr.req.total})</span>
+            <span class="fraction fraction-add ${addClass}" title="Additional matched/total">Add: (${fr.add.matched}/${fr.add.total})</span>
         </div>
-  <span class=\"status-dot status-${task.status}\" title=\"${task.status}\"></span>
-        <div class="row-location">${location || 'N/A'}</div>
+        <div class="row-location">${location}</div>
       </div>
     </div>
-    <div class="row-submeta">${whenText}</div>
+    <div class="row-submeta">${lastAssessedText}</div>
     <div class="details-container"></div>
   `;
 
-  const header = jobRow.querySelector('.row-header');
-  const detailsContainer = jobRow.querySelector('.details-container');
+  const header = row.querySelector('.row-header');
+  const detailsContainer = row.querySelector('.details-container');
 
-  // Initial applied visual state
-  if (task?.data?.job_applied === 1 || task?.data?.job_applied === true) {
-    jobRow.classList.add('applied');
+  if (state.appliedByJob.get(job.job_id) === true) {
+    row.classList.add('applied');
   }
 
-  if (task.status === 'completed') {
-    header.addEventListener('click', () => {
-      const isVisible = detailsContainer.style.display === 'block';
-      if (isVisible) {
-        detailsContainer.style.display = 'none';
-        jobRow.classList.remove('expanded');
-      } else {
-        if (!detailsContainer.innerHTML) {
-          task.data.task_id = task.id;
-          detailsContainer.innerHTML = renderJobDetails(task.data);
-          const uniquePrefix = `details-${task.id}-${task.data.job_id || 'no-job-id'}`;
-          const copyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
-          const descriptionEl = document.getElementById(`${uniquePrefix}-desc`);
-          const regenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
-          const regenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
-          const appliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
+  header.addEventListener('click', async () => {
+    const isVisible = detailsContainer.style.display === 'block';
+    if (isVisible) {
+      detailsContainer.style.display = 'none';
+      row.classList.remove('expanded');
+    } else {
+      if (!detailsContainer.innerHTML) {
+      const skillsMap = await fetchAllSkillsOnce();
+      const jobSkills = skillsMap.get(job.job_id) || [];
+        const sections = mapSkillsToSections(jobSkills);
+        const data = {
+          job_id: job.job_id,
+          job_title: job.job_title,
+          job_company: job.job_company,
+          job_location: job.job_location,
+          job_salary: job.job_salary,
+          job_url: job.job_url,
+          job_url_direct: job.job_url_direct,
+          job_description: job.job_description,
+          required_qualifications: sections.required,
+          additional_qualifications: sections.additional,
+          evaluated_qualifications: sections.evaluated,
+        };
+        const rendered = renderJobDetails(data);
+        detailsContainer.innerHTML = rendered.html;
 
-          if (copyBtn && descriptionEl) {
-            copyBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              navigator.clipboard.writeText(descriptionEl.textContent).then(() => {
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-              }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                copyBtn.textContent = 'Error!';
-              });
-            });
-          }
+        const copyBtn = document.getElementById(rendered.ids.copyBtnId);
+        const descriptionEl = document.getElementById(rendered.ids.descriptionId);
+        const regenBtn = document.getElementById(rendered.ids.regenBtnId);
+        const regenStatusEl = document.getElementById(rendered.ids.regenStatusId);
+        const appliedBtn = document.getElementById(rendered.ids.appliedBtnId);
 
-          if (regenBtn && task.data?.job_id) {
-            regenBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              if (regenBtn.disabled) return;
-              regenBtn.disabled = true;
-              const originalText = regenBtn.textContent;
-              regenBtn.textContent = 'Regenerating...';
-              regenStatusEl.textContent = '';
-              try {
-                const resp = await regenerateAssessment(task.data.job_id);
-                if (resp.status === 'success' && resp.data) {
-                  // Update task data and storage
-                  task.data = resp.data;
-                  task.data.task_id = task.id; // preserve for rendering
-                  await browser.storage.local.set({ [task.id]: task });
-                  // Re-render details
-                  detailsContainer.innerHTML = renderJobDetails(task.data);
-                  // Re-bind buttons after re-render
-                  const newCopyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
-                  const newDescriptionEl = document.getElementById(`${uniquePrefix}-desc`);
-                  const newRegenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
-                  const newRegenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
-                  const newAppliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
-                  if (newCopyBtn && newDescriptionEl) {
-                    newCopyBtn.addEventListener('click', (e2) => {
-                      e2.stopPropagation();
-                      navigator.clipboard.writeText(newDescriptionEl.textContent).then(() => {
-                        newCopyBtn.textContent = 'Copied!';
-                        setTimeout(() => { newCopyBtn.textContent = 'Copy'; }, 2000);
-                      }).catch(err => {
-                        console.error('Failed to copy text: ', err);
-                        newCopyBtn.textContent = 'Error!';
-                      });
-                    });
-                  }
-                  if (newRegenBtn) {
-                    newRegenBtn.addEventListener('click', (e3) => {
-                      e3.stopPropagation();
-                    });
-                  }
-      if (newAppliedBtn && task.data?.job_id) {
-                    newAppliedBtn.addEventListener('click', async (e4) => {
-                      e4.stopPropagation();
-                      if (newAppliedBtn.disabled) return;
-                      const originalText2 = newAppliedBtn.textContent;
-                      const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
-                      newAppliedBtn.disabled = true;
-                      newAppliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
-                      try {
-                        if (currentlyApplied) {
-                          await unmarkApplied(task.data.job_id);
-                          task.data.job_applied = 0;
-                          newAppliedBtn.textContent = 'Applied to Job';
-        jobRow.classList.remove('applied');
-                        } else {
-                          await markApplied(task.data.job_id);
-                          task.data.job_applied = 1;
-                          newAppliedBtn.textContent = 'Unmark Applied';
-        jobRow.classList.add('applied');
-                        }
-                        await browser.storage.local.set({ [task.id]: task });
-                      } catch (err) {
-                        console.error('Toggle applied failed', err);
-                        newAppliedBtn.textContent = 'Error';
-                        setTimeout(() => { newAppliedBtn.textContent = originalText2; newAppliedBtn.disabled = false; }, 3000);
-                      } finally {
-                        newAppliedBtn.disabled = false;
-                      }
-                    });
-                  }
-                  // Update collapsed fractions
-                  const updatedFr = computeFractionsFromTaskData(task.data);
-                  const reqEl = jobRow.querySelector('.fraction-req');
-                  const addEl = jobRow.querySelector('.fraction-add');
-                  updateFractionEl(reqEl, 'Req', updatedFr.req.matched, updatedFr.req.total);
-                  updateFractionEl(addEl, 'Add', updatedFr.add.matched, updatedFr.add.total);
-                  regenStatusEl.textContent = 'Updated';
-                } else {
-                  regenStatusEl.textContent = 'Failed';
-                }
-              } catch (err) {
-                console.error('Regenerate failed', err);
-                regenStatusEl.textContent = 'Error';
-              } finally {
-                regenBtn.disabled = false;
-                regenBtn.textContent = originalText;
-                setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
-              }
+        if (copyBtn && descriptionEl) {
+          copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(descriptionEl.textContent).then(() => {
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            }).catch(err => {
+              console.error('Failed to copy text: ', err);
+              copyBtn.textContent = 'Error!';
             });
-          }
-
-    if (appliedBtn && task.data?.job_id) {
-            appliedBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              if (appliedBtn.disabled) return;
-              const originalText = appliedBtn.textContent;
-              const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
-              appliedBtn.disabled = true;
-              appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
-              try {
-                if (currentlyApplied) {
-                  await unmarkApplied(task.data.job_id);
-                  task.data.job_applied = 0;
-                  appliedBtn.textContent = 'Applied to Job';
-      jobRow.classList.remove('applied');
-                } else {
-                  await markApplied(task.data.job_id);
-                  task.data.job_applied = 1;
-                  appliedBtn.textContent = 'Unmark Applied';
-      jobRow.classList.add('applied');
-                }
-                await browser.storage.local.set({ [task.id]: task });
-              } catch (err) {
-                console.error('Toggle applied failed', err);
-                appliedBtn.textContent = 'Error';
-                setTimeout(() => { appliedBtn.textContent = originalText; appliedBtn.disabled = false; }, 3000);
-              } finally {
-                appliedBtn.disabled = false;
-              }
-            });
-          }
+          });
         }
-        detailsContainer.style.display = 'block';
-        jobRow.classList.add('expanded');
+
+        if (regenBtn) {
+          regenBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (regenBtn.disabled) return;
+            const originalText = regenBtn.textContent;
+            regenBtn.disabled = true;
+            regenBtn.textContent = 'Regenerating...';
+            regenStatusEl.textContent = '';
+            try {
+              const resp = await regenerateAssessment(job.job_id);
+              if (resp.status === 'success' && resp.data) {
+                const newSkillsMap = await fetchAllSkillsOnce();
+                state.skillsByJob = null;
+                await fetchAllSkillsOnce();
+                const updatedSkills = state.skillsByJob.get(job.job_id) || [];
+                const updatedSections = mapSkillsToSections(updatedSkills);
+                const updatedData = {
+                  ...resp.data,
+                  required_qualifications: updatedSections.required,
+                  additional_qualifications: updatedSections.additional,
+                  evaluated_qualifications: updatedSections.evaluated,
+                };
+                const rerendered = renderJobDetails(updatedData);
+                detailsContainer.innerHTML = rerendered.html;
+                const copyBtn2 = document.getElementById(rerendered.ids.copyBtnId);
+                const descriptionEl2 = document.getElementById(rerendered.ids.descriptionId);
+                const regenBtn2 = document.getElementById(rerendered.ids.regenBtnId);
+                const regenStatusEl2 = document.getElementById(rerendered.ids.regenStatusId);
+                if (copyBtn2 && descriptionEl2) {
+                  copyBtn2.addEventListener('click', (evt) => {
+                    evt.stopPropagation();
+                    navigator.clipboard.writeText(descriptionEl2.textContent).then(() => {
+                      copyBtn2.textContent = 'Copied!';
+                      setTimeout(() => { copyBtn2.textContent = 'Copy'; }, 2000);
+                    });
+                  });
+                }
+                if (regenBtn2) {
+                  regenBtn2.addEventListener('click', (evt) => evt.stopPropagation());
+                }
+
+              const newFr = computeFractions(updatedSkills);
+              const reqEl = row.querySelector('.fraction-req');
+              const addEl = row.querySelector('.fraction-add');
+              updateFractionEl(reqEl, 'Req', newFr.req.matched, newFr.req.total);
+              updateFractionEl(addEl, 'Add', newFr.add.matched, newFr.add.total);
+              } else {
+                regenStatusEl.textContent = 'Error';
+              }
+            } catch (err) {
+              console.error('Regenerate failed', err);
+              regenStatusEl.textContent = 'Error';
+            } finally {
+              regenBtn.disabled = false;
+              regenBtn.textContent = originalText;
+              setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
+            }
+          });
+        }
+
+    if (appliedBtn) {
+          appliedBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (appliedBtn.disabled) return;
+    const originalText = appliedBtn.textContent;
+    const currentlyApplied = state.appliedByJob.get(job.job_id) === true;
+            appliedBtn.disabled = true;
+            appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
+            try {
+              if (currentlyApplied) {
+                await unmarkApplied(job.job_id);
+                state.appliedByJob.set(job.job_id, false);
+                appliedBtn.textContent = 'Applied to Job';
+        row.classList.remove('applied');
+              } else {
+                await markApplied(job.job_id);
+                state.appliedByJob.set(job.job_id, true);
+                appliedBtn.textContent = 'Unmark Applied';
+        row.classList.add('applied');
+              }
+            } catch (err) {
+              console.error('Toggle applied failed', err);
+              appliedBtn.textContent = 'Error';
+              setTimeout(() => { appliedBtn.textContent = originalText; }, 3000);
+            } finally {
+              appliedBtn.disabled = false;
+            }
+          });
+        }
       }
-    });
-  }
+      detailsContainer.style.display = 'block';
+      row.classList.add('expanded');
+    }
+  });
 
-  return jobRow;
+  return row;
 }
 
-async function renderAllJobs() {
-  const allTasks = await browser.storage.local.get(null);
-  jobListContainer.innerHTML = '';
-
-  const sortedTasks = Object.values(allTasks).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-
-  if (sortedTasks.length === 0) {
-    jobListContainer.innerHTML = '<p>No jobs have been processed yet.</p>';
-    return;
-  }
-
-  for (const task of sortedTasks) {
-    const jobElement = renderJob(task);
-    jobListContainer.appendChild(jobElement);
+async function loadHistory() {
+  const daysBack = Math.max(1, parseInt(daysBackInput.value || '5', 10));
+  try {
+    container.innerHTML = '<p class="empty">Loading…</p>';
+    const [data, skillsMap] = await Promise.all([
+      fetchHistory(daysBack, 200),
+      fetchAllSkillsOnce()
+    ]);
+    if (!Array.isArray(data) || data.length === 0) {
+      container.innerHTML = '<p class="empty">No history found.</p>';
+      return;
+    }
+    state.appliedByJob = new Map();
+    for (const job of data) {
+      if (job && job.job_id != null) {
+        state.appliedByJob.set(job.job_id, job.job_applied === 1 || job.job_applied === true);
+      }
+    }
+    container.innerHTML = '';
+    for (const job of data) {
+      container.appendChild(renderJobRow(job, skillsMap));
+    }
+  } catch (err) {
+    console.error('Failed to load history', err);
+    container.innerHTML = `<p class="empty">${err.message || 'Failed to load history.'}</p>`;
   }
 }
 
-browser.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local') {
-    renderAllJobs();
-  }
-});
+refreshBtn.addEventListener('click', loadHistory);
 
-clearHistoryBtn.addEventListener('click', async () => {
-  if (confirm('Are you sure you want to delete all job history? This cannot be undone.')) {
-    await browser.storage.local.clear();
-    renderAllJobs();
-  }
-});
-
-document.addEventListener('DOMContentLoaded', renderAllJobs);
+document.addEventListener('DOMContentLoaded', loadHistory);
