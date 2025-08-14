@@ -11,9 +11,13 @@ if (!hideAppliedBtn) {
   hideAppliedBtn.id = 'hide-applied-btn';
   hideAppliedBtn.className = 'regen-button';
   hideAppliedBtn.textContent = 'Hide Applied';
-  // Insert to the left of daysBackInput
-  const parent = daysBackInput.parentNode;
-  parent.insertBefore(hideAppliedBtn, daysBackInput);
+  // Insert to the right of refreshBtn
+  const parent = refreshBtn.parentNode;
+  if (refreshBtn.nextSibling) {
+    parent.insertBefore(hideAppliedBtn, refreshBtn.nextSibling);
+  } else {
+    parent.appendChild(hideAppliedBtn);
+  }
 }
 
 const state = {

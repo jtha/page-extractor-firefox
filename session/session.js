@@ -2,6 +2,33 @@
 const jobListContainer = document.getElementById('job-list-container');
 const clearSessionBtn = document.getElementById('clear-session-btn');
 
+// Add Hide Applied button to the right of clearSessionBtn
+let hideAppliedBtn = document.getElementById('hide-applied-btn');
+if (!hideAppliedBtn) {
+  hideAppliedBtn = document.createElement('button');
+  hideAppliedBtn.id = 'hide-applied-btn';
+  hideAppliedBtn.className = 'regen-button';
+  hideAppliedBtn.textContent = 'Hide Applied';
+  const parent = clearSessionBtn.parentNode;
+  if (clearSessionBtn.nextSibling) {
+    parent.insertBefore(hideAppliedBtn, clearSessionBtn.nextSibling);
+  } else {
+    parent.appendChild(hideAppliedBtn);
+  }
+}
+
+const state = {
+  hideApplied: false,
+};
+
+if (hideAppliedBtn) {
+  hideAppliedBtn.addEventListener('click', () => {
+    state.hideApplied = !state.hideApplied;
+    hideAppliedBtn.textContent = state.hideApplied ? 'Show Applied' : 'Hide Applied';
+    renderAllJobs();
+  });
+}
+
 function createQualificationTable(title, qualificationsArray, headers) {
   if (!qualificationsArray || qualificationsArray.length === 0) return '';
   let matchFraction = '';
@@ -340,10 +367,13 @@ async function renderAllJobs() {
   const allTasks = await browser.storage.local.get(null);
   jobListContainer.innerHTML = '';
 
-  const sortedTasks = Object.values(allTasks).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  let sortedTasks = Object.values(allTasks).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  if (state.hideApplied) {
+    sortedTasks = sortedTasks.filter(task => !(task?.data?.job_applied === 1 || task?.data?.job_applied === true));
+  }
 
   if (sortedTasks.length === 0) {
-  jobListContainer.innerHTML = '<p>No jobs have been processed yet.</p>';
+    jobListContainer.innerHTML = '<p>No jobs have been processed yet.</p>';
     return;
   }
 
