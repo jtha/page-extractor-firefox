@@ -1,16 +1,36 @@
 // Session page script (migrated from History)
 const jobListContainer = document.getElementById('job-list-container');
-const clearSessionBtn = document.getElementById('clear-session-btn');
+let clearSessionBtn = document.getElementById('clear-session-btn');
+
+// Ensure both buttons are in a flex container for alignment
+let actionBtnContainer = document.getElementById('action-btn-container');
+if (!actionBtnContainer) {
+  actionBtnContainer = document.createElement('div');
+  actionBtnContainer.id = 'action-btn-container';
+  actionBtnContainer.style.display = 'flex';
+  actionBtnContainer.style.gap = '12px';
+  actionBtnContainer.style.marginLeft = 'auto';
+  // Insert into header
+  const header = document.querySelector('header');
+  if (header) {
+    header.appendChild(actionBtnContainer);
+  }
+}
+
+// Move clearSessionBtn into container if not already
+if (clearSessionBtn && clearSessionBtn.parentNode !== actionBtnContainer) {
+  clearSessionBtn.classList.add('action-btn');
+  actionBtnContainer.appendChild(clearSessionBtn);
+}
 
 // Add Hide Applied button to the right of clearSessionBtn
 let hideAppliedBtn = document.getElementById('hide-applied-btn');
 if (!hideAppliedBtn) {
   hideAppliedBtn = document.createElement('button');
   hideAppliedBtn.id = 'hide-applied-btn';
-  hideAppliedBtn.className = 'regen-button';
+  hideAppliedBtn.className = 'regen-button action-btn';
   hideAppliedBtn.textContent = 'Hide Applied';
-  const parent = clearSessionBtn.parentNode;
-  parent.insertBefore(hideAppliedBtn, clearSessionBtn.nextSibling);
+  actionBtnContainer.appendChild(hideAppliedBtn);
 }
 
 const state = {

@@ -25,16 +25,39 @@ h1 {
   margin: 0;
   font-size: 24px;
 }
-#clear-session-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
+
+/* Shared action button styles for session page */
+.action-btn {
+  background-color: #6c757d;
+  color: #fff;
+  border: 1px solid #6c757d;
   padding: 8px 15px;
   border-radius: 5px;
+  font-size: 15px;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.action-btn:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+#clear-session-btn {
+  background-color: #dc3545;
+  border: 1px solid #dc3545;
 }
 #clear-session-btn:hover {
   background-color: #c82333;
+  border-color: #c82333;
+}
+
+#hide-applied-btn {
+  background-color: #6c757d;
+  border: 1px solid #6c757d;
+}
+#hide-applied-btn:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
 }
 
 /* Row list (match History/Recent styles) */
