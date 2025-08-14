@@ -3,14 +3,25 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Recent Assessed Jobs</title>
-	<link rel="stylesheet" href="recent.css">
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="../styles/nav.css">
+	<link rel="stylesheet" href="recent.css">
 	<style>
 		/* Small inline safeguard if CSS fails to load */
 		.hidden { display: none; }
 	</style>
 	</head>
 <body>
+	<nav class="top-nav" aria-label="Primary">
+		<div class="nav-inner">
+			<div class="brand">Page Extractor</div>
+			<ul class="nav-links" role="list">
+				<li><a href="../recent/recent.html" aria-current="page">Recent</a></li>
+				<li><a href="../history/history.html">History</a></li>
+			</ul>
+			<div class="spacer" aria-hidden="true"></div>
+		</div>
+	</nav>
 	<div class="container">
 		<header>
 			<h1>Recent Assessed Jobs</h1>

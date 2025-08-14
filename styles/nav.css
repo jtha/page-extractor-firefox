@@ -1,0 +1,91 @@
+/* Top navigation bar styles (shared across extension pages) */
+:root {
+  --nav-bg: #0b0f19;
+  --nav-fg: #e6edf3;
+  --nav-muted: #9da7b3;
+  --nav-accent: #3b82f6;
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --nav-height: 52px;
+}
+
+/* Respect user color scheme; you can customize further later */
+@media (prefers-color-scheme: light) {
+  :root {
+    --nav-bg: #ffffff;
+    --nav-fg: #0b1220;
+    --nav-muted: #4a5568;
+    --nav-accent: #2563eb;
+    --nav-border: rgba(0, 0, 0, 0.08);
+  }
+}
+
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: var(--nav-height);
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: 0 1px 0 var(--nav-border);
+}
+
+.top-nav .nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.top-nav .brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nav-muted);
+  letter-spacing: 0.3px;
+  user-select: none;
+}
+
+.top-nav .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top-nav .nav-links a {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--nav-fg);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.top-nav .nav-links a:hover {
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.top-nav .nav-links a[aria-current="page"] {
+  color: var(--nav-fg);
+  background: rgba(59, 130, 246, 0.15);
+  outline: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.top-nav .spacer {
+  flex: 1 1 auto;
+}
+
+/* Optional: compact on small screens */
+@media (max-width: 480px) {
+  .top-nav .brand { display: none; }
+  .top-nav .nav-inner { gap: 8px; padding: 0 8px; }
+  .top-nav .nav-links a { padding: 0 10px; height: 32px; font-size: 13px; }
+}
