@@ -40,18 +40,42 @@ if (!hideAppliedBtn) {
   controls.insertBefore(hideAppliedBtn, refreshBtn.nextSibling || null);
 }
 
+// Add toggle button for filtering decent leads only
+let decentOnlyBtn = document.getElementById('decent-only-btn');
+if (!decentOnlyBtn) {
+  decentOnlyBtn = document.createElement('button');
+  decentOnlyBtn.id = 'decent-only-btn';
+  decentOnlyBtn.className = 'action-btn';
+  decentOnlyBtn.textContent = 'Decent Only';
+  // Place after Hide Applied if present, else at end of controls
+  if (hideAppliedBtn && hideAppliedBtn.parentNode === controls) {
+    controls.insertBefore(decentOnlyBtn, hideAppliedBtn.nextSibling || null);
+  } else {
+    controls.appendChild(decentOnlyBtn);
+  }
+}
+
 const state = {
   skillsByJob: null,
   appliedByJob: new Map(),
   // cache skills per daysBack to avoid refetching when unchanged
   skillsCacheByDays: new Map(),
   hideApplied: false,
+  decentOnly: false,
 };
 
 if (hideAppliedBtn) {
   hideAppliedBtn.addEventListener('click', () => {
     state.hideApplied = !state.hideApplied;
     hideAppliedBtn.textContent = state.hideApplied ? 'Show Applied' : 'Hide Applied';
+    loadHistory();
+  });
+}
+
+if (decentOnlyBtn) {
+  decentOnlyBtn.addEventListener('click', () => {
+    state.decentOnly = !state.decentOnly;
+    decentOnlyBtn.textContent = state.decentOnly ? 'All Leads' : 'Decent Only';
     loadHistory();
   });
 }
@@ -231,6 +255,16 @@ function computeFractions(jobSkills) {
     req: { matched: reqMatched, total: req.length },
     add: { matched: addMatched, total: add.length },
   };
+}
+
+function isDecentLead(jobId, skillsMap) {
+  const jobSkills = (skillsMap && skillsMap.get(jobId)) || [];
+  const fr = computeFractions(jobSkills);
+  // Required fraction must be >= 0.5 and must exist
+  if (!fr.req.total || (fr.req.matched / fr.req.total) < 0.5) return false;
+  // Additional fraction must be >= 0.5 only if there are additional quals
+  if (fr.add.total > 0 && (fr.add.matched / fr.add.total) < 0.5) return false;
+  return true;
 }
 
 function getFractionClass(matched, total) {
@@ -455,6 +489,9 @@ async function loadHistory() {
     let jobsToRender = data;
     if (state.hideApplied) {
       jobsToRender = jobsToRender.filter(job => !(job.job_applied === 1 || job.job_applied === true));
+    }
+    if (state.decentOnly) {
+      jobsToRender = jobsToRender.filter(job => isDecentLead(job.job_id, skillsMap));
     }
     for (const job of jobsToRender) {
       container.appendChild(renderJobRow(job, skillsMap));
