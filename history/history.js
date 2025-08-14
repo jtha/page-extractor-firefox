@@ -6,9 +6,11 @@ const daysBackInput = document.getElementById('days-back');
 const state = {
   skillsByJob: null,
   appliedByJob: new Map(),
+  // cache skills per daysBack to avoid refetching when unchanged
+  skillsCacheByDays: new Map(),
 };
 
-async function fetchHistory(daysBack = 5, limit = 200) {
+async function fetchHistory(daysBack = 3, limit = 200) {
   const endpoint = `http://127.0.0.1:8000/jobs_recent?days_back=${encodeURIComponent(daysBack)}&limit=${encodeURIComponent(limit)}`;
   const response = await fetch(endpoint, { method: 'GET' });
   if (!response.ok) {
@@ -19,9 +21,15 @@ async function fetchHistory(daysBack = 5, limit = 200) {
   return response.json();
 }
 
-async function fetchAllSkillsOnce() {
-  if (state.skillsByJob) return state.skillsByJob;
-  const endpoint = 'http://127.0.0.1:8000/job_skills';
+async function fetchAllSkillsOnce(daysBack = 3, limit = 300) {
+  // cache by daysBack so changing the filter refetches
+  const cacheKey = `${daysBack}:${limit}`;
+  if (state.skillsCacheByDays.has(cacheKey)) {
+    const cached = state.skillsCacheByDays.get(cacheKey);
+    state.skillsByJob = cached; // keep compatibility
+    return cached;
+  }
+  const endpoint = `http://127.0.0.1:8000/job_skills_recent?days_back=${encodeURIComponent(daysBack)}&limit=${encodeURIComponent(limit)}`;
   const response = await fetch(endpoint, { method: 'GET' });
   if (!response.ok) {
     let msg = `API Error: ${response.status}`;
@@ -30,12 +38,13 @@ async function fetchAllSkillsOnce() {
   }
   const rows = await response.json();
   const map = new Map();
-  for (const r of rows) {
+  for (const r of rows || []) {
     const list = map.get(r.job_id) || [];
     list.push(r);
     map.set(r.job_id, list);
   }
   state.skillsByJob = map;
+  state.skillsCacheByDays.set(cacheKey, map);
   return map;
 }
 
@@ -239,7 +248,8 @@ function renderJobRow(job, skillsMap) {
       row.classList.remove('expanded');
     } else {
       if (!detailsContainer.innerHTML) {
-      const skillsMap = await fetchAllSkillsOnce();
+      const currentDaysBack = Math.max(1, parseInt(daysBackInput.value || '5', 10));
+      const skillsMap = await fetchAllSkillsOnce(currentDaysBack, 300);
       const jobSkills = skillsMap.get(job.job_id) || [];
         const sections = mapSkillsToSections(jobSkills);
         const data = {
@@ -288,9 +298,11 @@ function renderJobRow(job, skillsMap) {
             try {
               const resp = await regenerateAssessment(job.job_id);
               if (resp.status === 'success' && resp.data) {
-                const newSkillsMap = await fetchAllSkillsOnce();
+                // Invalidate cache and refetch recent skills
                 state.skillsByJob = null;
-                await fetchAllSkillsOnce();
+                state.skillsCacheByDays.clear();
+                const currentDaysBack2 = Math.max(1, parseInt(daysBackInput.value || '5', 10));
+                await fetchAllSkillsOnce(currentDaysBack2, 300);
                 const updatedSkills = state.skillsByJob.get(job.job_id) || [];
                 const updatedSections = mapSkillsToSections(updatedSkills);
                 const updatedData = {
@@ -381,7 +393,7 @@ async function loadHistory() {
     container.innerHTML = '<p class="empty">Loading…</p>';
     const [data, skillsMap] = await Promise.all([
       fetchHistory(daysBack, 200),
-      fetchAllSkillsOnce()
+      fetchAllSkillsOnce(daysBack, 300)
     ]);
     if (!Array.isArray(data) || data.length === 0) {
       container.innerHTML = '<p class="empty">No history found.</p>';
