@@ -1,15 +1,19 @@
 // History page script (migrated from Recent)
 
 const container = document.getElementById('history-list-container');
+
 const refreshBtn = document.getElementById('refresh-btn');
 const daysBackInput = document.getElementById('days-back');
+
+// Ensure both buttons have .action-btn for consistent sizing
+refreshBtn.classList.add('action-btn');
 
 // Add toggle button for hiding applied jobs
 let hideAppliedBtn = document.getElementById('hide-applied-btn');
 if (!hideAppliedBtn) {
   hideAppliedBtn = document.createElement('button');
   hideAppliedBtn.id = 'hide-applied-btn';
-  hideAppliedBtn.className = 'regen-button';
+  hideAppliedBtn.className = 'regen-button action-btn';
   hideAppliedBtn.textContent = 'Hide Applied';
   // Insert to the right of refreshBtn
   const parent = refreshBtn.parentNode;

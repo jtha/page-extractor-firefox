@@ -40,6 +40,30 @@ h1 {
 }
 #refresh-btn:hover { background-color: #0060df; }
 
+/* Shared action button styles for history page */
+.action-btn {
+  font-size: 15px;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+#refresh-btn {
+  background-color: #0078e3;
+  color: white;
+  border: 1px solid #0060df;
+}
+#refresh-btn:hover { background-color: #0060df; }
+#hide-applied-btn {
+  background-color: #6c757d;
+  color: #fff;
+  border: 1px solid #6c757d;
+}
+#hide-applied-btn:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
 /* Row list */
 .job-row { position: relative; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; padding: 12px; transition: box-shadow 0.2s, background-color 0.2s, border-color 0.2s; background-color: #fff; }
 .job-row.expanded { box-shadow: 0 6px 16px rgba(0,0,0,0.12); background-color: #f9fbff; border-color: #cfe0fb; }
