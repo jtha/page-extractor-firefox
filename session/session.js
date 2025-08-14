@@ -33,14 +33,33 @@ if (!hideAppliedBtn) {
   actionBtnContainer.appendChild(hideAppliedBtn);
 }
 
+// Add Decent Only button to the right of Hide Applied
+let decentOnlyBtn = document.getElementById('decent-only-btn');
+if (!decentOnlyBtn) {
+  decentOnlyBtn = document.createElement('button');
+  decentOnlyBtn.id = 'decent-only-btn';
+  decentOnlyBtn.className = 'action-btn';
+  decentOnlyBtn.textContent = 'Decent Only';
+  actionBtnContainer.appendChild(decentOnlyBtn);
+}
+
 const state = {
   hideApplied: false,
+  decentOnly: false,
 };
 
 if (hideAppliedBtn) {
   hideAppliedBtn.addEventListener('click', () => {
     state.hideApplied = !state.hideApplied;
     hideAppliedBtn.textContent = state.hideApplied ? 'Show Applied' : 'Hide Applied';
+    renderAllJobs();
+  });
+}
+
+if (decentOnlyBtn) {
+  decentOnlyBtn.addEventListener('click', () => {
+    state.decentOnly = !state.decentOnly;
+    decentOnlyBtn.textContent = state.decentOnly ? 'All Leads' : 'Decent Only';
     renderAllJobs();
   });
 }
@@ -165,6 +184,13 @@ function computeFractionsFromTaskData(data) {
     req: { matched: reqMatched, total: reqArr.length },
     add: { matched: addMatched, total: addArr.length }
   };
+}
+
+function isDecentLeadTask(task) {
+  const fr = computeFractionsFromTaskData(task?.data || {});
+  if (!fr.req.total || (fr.req.matched / fr.req.total) < 0.5) return false;
+  if (fr.add.total > 0 && (fr.add.matched / fr.add.total) < 0.5) return false;
+  return true;
 }
 
 function getFractionClass(matched, total) {
@@ -386,6 +412,9 @@ async function renderAllJobs() {
   let sortedTasks = Object.values(allTasks).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
   if (state.hideApplied) {
     sortedTasks = sortedTasks.filter(task => !(task?.data?.job_applied === 1 || task?.data?.job_applied === true));
+  }
+  if (state.decentOnly) {
+    sortedTasks = sortedTasks.filter(task => isDecentLeadTask(task));
   }
 
   if (sortedTasks.length === 0) {
