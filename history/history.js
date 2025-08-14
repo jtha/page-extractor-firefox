@@ -21,7 +21,7 @@ async function fetchHistory(daysBack = 3, limit = 200) {
   return response.json();
 }
 
-async function fetchAllSkillsOnce(daysBack = 3, limit = 300) {
+async function fetchAllSkillsOnce(daysBack = 5, limit = 300) {
   // cache by daysBack so changing the filter refetches
   const cacheKey = `${daysBack}:${limit}`;
   if (state.skillsCacheByDays.has(cacheKey)) {

@@ -42,7 +42,8 @@ async function processJob(task) {
 
     const targetSelectors = [
       'div.jobs-search__job-details--wrapper',
-      'div.jobs-semantic-search-job-details-wrapper'
+      'div.jobs-semantic-search-job-details-wrapper',
+      'div.job-view-layout.jobs-details'
     ];
     // Find the tab by its URL, since the user might have navigated away.
     const [targetTab] = await browser.tabs.query({ url: task.url });
