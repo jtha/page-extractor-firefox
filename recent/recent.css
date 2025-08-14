@@ -82,4 +82,6 @@ h4 { margin-top: 20px; margin-bottom: 5px; color: #333; border-bottom: 1px solid
 .regen-button { background-color: #6c757d; border: 1px solid #6c757d; color: #fff; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 .regen-button:hover { background-color: #5a6268; border-color: #545b62; }
 .details-action-bar { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+.details-action-bar .applied-button { margin-left: auto; background-color: #198754; border: 1px solid #198754; color: #fff; }
+.details-action-bar .applied-button:hover { background-color: #157347; border-color: #146c43; }
 .regen-status { font-size: 12px; color: #666; }

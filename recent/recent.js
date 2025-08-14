@@ -97,6 +97,20 @@ async function regenerateAssessment(jobId) {
 	return response.json();
 }
 
+async function markApplied(jobId) {
+	const endpoint = 'http://127.0.0.1:8000/update_job_applied';
+	const response = await fetch(endpoint, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ job_id: jobId })
+	});
+	if (!response.ok) {
+		const errorData = await response.json().catch(() => ({}));
+		throw new Error(errorData.detail || `API Error: ${response.status}`);
+	}
+	return response.json();
+}
+
 function renderJobDetails(data) {
 	if (!data) return '<p>No details available.</p>';
 	const uniquePrefix = `details-${data.job_id}-${Date.now()}`;
@@ -104,6 +118,7 @@ function renderJobDetails(data) {
 	const copyBtnId = `${uniquePrefix}-copy-btn`;
 	const regenBtnId = `${uniquePrefix}-regen-btn`;
 	const regenStatusId = `${uniquePrefix}-regen-status`;
+	const appliedBtnId = `${uniquePrefix}-applied-btn`;
 	let description = data.job_description || 'Not found.';
 	const keyMappings = { job_company: 'Company', job_title: 'Title', job_salary: 'Salary', job_location: 'Location', job_url_direct: 'Direct Link' };
 	let detailsHtml = '<table class="job-data-table">';
@@ -123,6 +138,7 @@ function renderJobDetails(data) {
 		<div class="details-action-bar">
 			<button id="${regenBtnId}" class="regen-button" title="Regenerate assessment">Regenerate Assessment</button>
 			<span id="${regenStatusId}" class="regen-status"></span>
+			<button id="${appliedBtnId}" class="regen-button applied-button" style="margin-left:auto" title="Mark as applied">Applied to Job</button>
 		</div>
 		<h4 class="description-header"><span>Description</span><button id="${copyBtnId}" class="copy-button" title="Copy description">Copy</button></h4>
 		<pre id="${descriptionId}" class="job-description">${description}</pre>
@@ -132,7 +148,7 @@ function renderJobDetails(data) {
 	detailsHtml += createQualificationTable('Required Qualifications', data.required_qualifications, threeColumn);
 	detailsHtml += createQualificationTable('Additional Qualifications', data.additional_qualifications, threeColumn);
 	detailsHtml += createQualificationTable('Evaluated Qualifications', data.evaluated_qualifications, oneColumn);
-	return { html: detailsHtml, ids: { copyBtnId, descriptionId, regenBtnId, regenStatusId } };
+	return { html: detailsHtml, ids: { copyBtnId, descriptionId, regenBtnId, regenStatusId, appliedBtnId } };
 }
 
 function computeFractions(jobSkills) {
@@ -227,6 +243,7 @@ function renderJobRow(job, skillsMap) {
 				const descriptionEl = document.getElementById(rendered.ids.descriptionId);
 				const regenBtn = document.getElementById(rendered.ids.regenBtnId);
 				const regenStatusEl = document.getElementById(rendered.ids.regenStatusId);
+				const appliedBtn = document.getElementById(rendered.ids.appliedBtnId);
 
 				if (copyBtn && descriptionEl) {
 					copyBtn.addEventListener('click', (e) => {
@@ -301,6 +318,27 @@ function renderJobRow(job, skillsMap) {
 							regenBtn.disabled = false;
 							regenBtn.textContent = originalText;
 							setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
+						}
+					});
+				}
+
+				if (appliedBtn) {
+					appliedBtn.addEventListener('click', async (e) => {
+						e.stopPropagation();
+						if (appliedBtn.disabled) return;
+						const originalText = appliedBtn.textContent;
+						appliedBtn.disabled = true;
+						appliedBtn.textContent = 'Marking...';
+						try {
+							await markApplied(job.job_id);
+							appliedBtn.textContent = 'Applied ✓';
+						} catch (err) {
+							console.error('Mark applied failed', err);
+							appliedBtn.textContent = 'Error';
+							setTimeout(() => { appliedBtn.textContent = originalText; }, 3000);
+						} finally {
+							// keep it disabled to avoid double-marking; re-enable if you prefer
+							appliedBtn.disabled = true;
 						}
 					});
 				}
