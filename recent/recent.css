@@ -71,8 +71,8 @@ h1 {
 /* Sticky header for expanded rows */
 .job-row.expanded .row-header {
 	position: sticky;
-	top: calc(var(--nav-height, 44px) + 20px); /* nav height + page padding */
-	z-index: 5;
+	top: var(--nav-height, 44px); /* sit directly under nav */
+	z-index: 6;
 	background: inherit;
 	padding: 12px;
 	margin: -12px -12px 0 -12px; /* keep visual alignment due to sticky stacking */
