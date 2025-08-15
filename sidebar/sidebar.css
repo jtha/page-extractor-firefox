@@ -198,7 +198,7 @@ h4 {
 .footer-actions {
   position: fixed;
   right: 10px;
-  bottom: 10px;
+  bottom: 48px; /* sit above the credits */
   display: flex;
   gap: 8px;
 }
@@ -211,7 +211,7 @@ h4 {
 .footer-credits {
   position: fixed;
   right: 10px;
-  bottom: 48px; /* leave space above action buttons */
+  bottom: 10px; /* anchored at bottom-right */
   font-size: 12px;
   color: #666;
   background: rgba(255, 255, 255, 0.9);

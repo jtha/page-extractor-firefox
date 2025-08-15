@@ -72,6 +72,6 @@ async function refreshCredits() {
   }
 }
 
-// Load once on sidebar open and refresh periodically (every 60s)
+// Load once on sidebar open and refresh periodically (every 5 minutes)
 refreshCredits();
-setInterval(refreshCredits, 60000);
+setInterval(refreshCredits, 300000);
