@@ -39,7 +39,7 @@ if (!decentOnlyBtn) {
   decentOnlyBtn = document.createElement('button');
   decentOnlyBtn.id = 'decent-only-btn';
   decentOnlyBtn.className = 'action-btn';
-  decentOnlyBtn.textContent = 'Decent Only';
+  decentOnlyBtn.textContent = 'Show Good Leads';
   actionBtnContainer.appendChild(decentOnlyBtn);
 }
 
@@ -59,7 +59,7 @@ if (hideAppliedBtn) {
 if (decentOnlyBtn) {
   decentOnlyBtn.addEventListener('click', () => {
     state.decentOnly = !state.decentOnly;
-    decentOnlyBtn.textContent = state.decentOnly ? 'All Leads' : 'Decent Only';
+    decentOnlyBtn.textContent = state.decentOnly ? 'Show All Leads' : 'Show Good Leads';
     renderAllJobs();
   });
 }
