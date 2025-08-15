@@ -2,6 +2,7 @@ const extractBtn = document.getElementById('extract-btn');
 const statusDiv = document.getElementById('status-message');
 const openHistoryBtn = document.getElementById('open-history-btn');
 const openSessionBtn = document.getElementById('open-session-btn');
+const creditsEl = document.getElementById('remaining-credits');
 
 extractBtn.addEventListener('click', async () => {
   extractBtn.disabled = true;
@@ -55,3 +56,22 @@ function openRelativePage(path) {
 
 openHistoryBtn?.addEventListener('click', () => openRelativePage('history/history.html'));
 openSessionBtn?.addEventListener('click', () => openRelativePage('session/session.html'));
+
+// Fetch and display remaining OpenRouter credits
+async function refreshCredits() {
+  if (!creditsEl) return;
+  try {
+    const resp = await fetch('http://127.0.0.1:8000/openrouter_credits', { method: 'GET' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const remaining = Number(data.remaining_credits ?? NaN);
+    const formatted = isFinite(remaining) ? remaining.toFixed(2) : '—';
+    creditsEl.textContent = `Remaining Credits: ${formatted}`;
+  } catch (e) {
+    creditsEl.textContent = 'Remaining Credits: —';
+  }
+}
+
+// Load once on sidebar open and refresh periodically (every 60s)
+refreshCredits();
+setInterval(refreshCredits, 60000);
