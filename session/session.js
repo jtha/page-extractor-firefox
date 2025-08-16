@@ -92,6 +92,44 @@ function createQualificationTable(title, qualificationsArray, headers) {
   return tableHtml;
 }
 
+async function syncAppliedStatusFromAPI(tasks) {
+  // Check if any tasks are missing the job_applied field and sync from API if needed
+  const tasksNeedingSync = tasks.filter(task => 
+    task?.data?.job_id && 
+    task?.data?.job_applied === undefined
+  );
+  
+  if (tasksNeedingSync.length === 0) return;
+  
+  console.log(`Syncing applied status for ${tasksNeedingSync.length} tasks...`);
+  
+  for (const task of tasksNeedingSync) {
+    try {
+      // Fetch recent job data that includes applied status
+      const response = await fetch(`http://127.0.0.1:8000/jobs_recent?days_back=30&limit=300`);
+      if (!response.ok) continue;
+      
+      const recentJobs = await response.json();
+      const matchingJob = recentJobs.find(job => job.job_id === task.data.job_id);
+      
+      if (matchingJob) {
+        task.data.job_applied = matchingJob.job_applied || 0;
+        await browser.storage.local.set({ [task.id]: task });
+        console.log(`Synced applied status for job ${task.data.job_id}: ${task.data.job_applied}`);
+      } else {
+        // Default to not applied if not found in recent jobs
+        task.data.job_applied = 0;
+        await browser.storage.local.set({ [task.id]: task });
+      }
+    } catch (err) {
+      console.error(`Failed to sync applied status for job ${task.data.job_id}:`, err);
+      // Default to not applied on error
+      task.data.job_applied = 0;
+      await browser.storage.local.set({ [task.id]: task });
+    }
+  }
+}
+
 async function regenerateAssessment(jobId) {
   const endpoint = 'http://127.0.0.1:8000/regenerate_job_assessment';
   const response = await fetch(endpoint, {
@@ -425,6 +463,9 @@ async function renderAllJobs() {
   jobListContainer.innerHTML = '';
 
   let sortedTasks = Object.values(allTasks).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  
+  // For backwards compatibility: check if tasks have job_applied field and sync with API if needed
+  await syncAppliedStatusFromAPI(sortedTasks);
   if (state.hideApplied) {
     sortedTasks = sortedTasks.filter(task => !(task?.data?.job_applied === 1 || task?.data?.job_applied === true));
   }
