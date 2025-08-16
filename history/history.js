@@ -326,12 +326,24 @@ function renderJobRow(job, skillsMap) {
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
       return;
     }
+    
     const isVisible = detailsContainer.style.display === 'block';
+    
+    // If the row is expanded, only allow collapse when clicking on header area
     if (isVisible) {
+      // Check if the click was on the header or its children
+      const clickedHeader = e.target === header || header.contains(e.target);
+      if (!clickedHeader) {
+        return; // Don't collapse if clicked outside header area
+      }
+      
       detailsContainer.style.display = 'none';
       row.classList.remove('expanded');
-    } else {
-      if (!detailsContainer.innerHTML) {
+      return;
+    }
+    
+    // If not expanded, clicking anywhere in the row expands it
+    if (!detailsContainer.innerHTML) {
       const currentDaysBack = Math.max(1, parseInt(daysBackInput.value || '5', 10));
       const skillsMap = await fetchAllSkillsOnce(currentDaysBack, 300);
       const jobSkills = skillsMap.get(job.job_id) || [];
@@ -465,7 +477,6 @@ function renderJobRow(job, skillsMap) {
       }
       detailsContainer.style.display = 'block';
       row.classList.add('expanded');
-    }
   });
 
   return row;
