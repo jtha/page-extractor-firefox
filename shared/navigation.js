@@ -27,41 +27,47 @@ class Navigation {
         const navLinks = NavigationConfig.pages.map(page => {
             const isActive = page.id === this.currentPageId;
             const ariaCurrent = isActive ? ' aria-current="page"' : '';
-            return `<li><a href="../${page.path}"${ariaCurrent}>${page.name}</a></li>`;
-        }).join('\n        ');
+            return `        <li><a href="../${page.path}"${ariaCurrent}>${page.name}</a></li>`;
+        }).join('\n');
 
-        return `
-        <nav class="top-nav" aria-label="Primary">
-            <div class="nav-inner">
-                <div class="brand">${NavigationConfig.brand}</div>
-                <ul class="nav-links" role="list">
-                    ${navLinks}
-                </ul>
-                <div class="spacer" aria-hidden="true"></div>
-            </div>
-        </nav>`;
+        return `<nav class="top-nav" aria-label="Primary">
+    <div class="nav-inner">
+        <div class="brand">${NavigationConfig.brand}</div>
+        <ul class="nav-links" role="list">
+${navLinks}
+        </ul>
+        <div class="spacer" aria-hidden="true"></div>
+    </div>
+</nav>`;
     }
 
     render() {
-        // Find existing nav or create placeholder
-        const existingNav = document.querySelector('.top-nav');
+        console.log('Navigation render() called');
+        // Insert navigation at the beginning of body
         const navHtml = this.generateNavigation();
-        
-        if (existingNav) {
-            existingNav.outerHTML = navHtml;
-        } else {
-            // If no existing nav, insert at beginning of body
-            document.body.insertAdjacentHTML('afterbegin', navHtml);
-        }
+        console.log('Generated navigation HTML:', navHtml.substring(0, 100) + '...');
+        document.body.insertAdjacentHTML('afterbegin', navHtml);
+        console.log('Navigation HTML inserted');
     }
 }
 
 // Initialize navigation when DOM is loaded
 function initNavigation(currentPageId) {
-    document.addEventListener('DOMContentLoaded', function() {
+    console.log('initNavigation called with:', currentPageId);
+    
+    if (document.readyState === 'loading') {
+        console.log('DOM still loading, waiting for DOMContentLoaded');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded fired, creating navigation');
+            const nav = new Navigation(currentPageId);
+            nav.render();
+        });
+    } else {
+        console.log('DOM already ready, creating navigation immediately');
+        // DOM is already ready
         const nav = new Navigation(currentPageId);
         nav.render();
-    });
+    }
 }
 
 // Export for use in individual pages
