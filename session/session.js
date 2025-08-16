@@ -249,7 +249,11 @@ function renderJob(task) {
   }
 
   if (task.status === 'completed') {
-    header.addEventListener('click', () => {
+    jobRow.addEventListener('click', (e) => {
+      // Don't expand if clicking on interactive elements
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+        return;
+      }
       const isVisible = detailsContainer.style.display === 'block';
       if (isVisible) {
         detailsContainer.style.display = 'none';

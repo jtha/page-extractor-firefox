@@ -63,7 +63,7 @@ button:disabled {
 .footer-actions {
   position: fixed;
   right: 10px;
-  bottom: 48px; /* sit above the credits */
+  bottom: 36px; /* sit above the credits */
   display: flex;
   gap: 8px;
 }
