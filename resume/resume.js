@@ -3,11 +3,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBtn = document.getElementById('refresh-btn');
     const editBtn = document.getElementById('edit-btn');
     const updateBtn = document.getElementById('update-btn');
-    const cancelBtn = document.getElementById('cancel-btn');
+    const stopEditingBtn = document.getElementById('stop-editing-btn');
     const resumeContainer = document.getElementById('resume-container');
     
     let currentMarkdown = '';
     let isEditMode = false;
+    let isPreviewMode = false;
     
     // Load resume on page load
     loadResume();
@@ -27,13 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
         saveResume();
     });
     
-    // Cancel button functionality
-    cancelBtn.addEventListener('click', function() {
+    // Stop Editing button functionality
+    stopEditingBtn.addEventListener('click', function() {
         const textarea = document.getElementById('markdown-editor');
         if (textarea && textarea.value !== currentMarkdown) {
-            if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
-                exitEditMode();
-            }
+            // Show preview mode instead of immediately exiting
+            showPreviewMode(textarea.value);
         } else {
             exitEditMode();
         }
@@ -66,46 +66,140 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function enterEditMode() {
-        isEditMode = true;
-        updateButtonVisibility();
         showEditMode();
     }
     
     function exitEditMode() {
         isEditMode = false;
+        isPreviewMode = false;
         updateButtonVisibility();
         displayResume(currentMarkdown);
         // Clear localStorage draft when exiting edit mode
         localStorage.removeItem('resume-draft');
     }
     
+    function showPreviewMode(previewMarkdown) {
+        isPreviewMode = true;
+        updateButtonVisibility();
+        
+        // Show preview with action buttons
+        const htmlContent = convertMarkdownToHTML(previewMarkdown);
+        resumeContainer.innerHTML = `
+            <div class="preview-mode">
+                <div class="preview-header">
+                    <h3>Preview of Changes</h3>
+                    <div class="preview-actions">
+                        <button id="save-changes-btn" class="btn btn-success">Save Changes</button>
+                        <button id="continue-editing-btn" class="btn btn-secondary">Continue Editing</button>
+                        <button id="discard-changes-btn" class="btn btn-danger">Discard Changes</button>
+                    </div>
+                </div>
+                <div class="resume-content">
+                    ${htmlContent}
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners for preview actions
+        document.getElementById('save-changes-btn').addEventListener('click', () => {
+            updateMarkdownAndSave(previewMarkdown);
+        });
+        
+        document.getElementById('continue-editing-btn').addEventListener('click', () => {
+            showEditMode();
+        });
+        
+        document.getElementById('discard-changes-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to discard all changes?')) {
+                exitEditMode();
+            }
+        });
+    }
+    
+    async function updateMarkdownAndSave(newMarkdown) {
+        try {
+            // Show saving state
+            const saveBtn = document.getElementById('save-changes-btn');
+            const originalText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            const response = await fetch('http://localhost:8000/document_store/upsert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    document_id: generateUUID(),
+                    document_name: "master_resume",
+                    document_markdown: newMarkdown,
+                    document_timestamp: Math.floor(Date.now() / 1000),
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+            
+            // Update current markdown and exit
+            currentMarkdown = newMarkdown;
+            localStorage.removeItem('resume-draft');
+            
+            // Show success message briefly then exit
+            saveBtn.textContent = 'Saved!';
+            setTimeout(() => {
+                exitEditMode();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error saving resume:', error);
+            alert(`Failed to save resume: ${error.message}`);
+            const saveBtn = document.getElementById('save-changes-btn');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Changes';
+        }
+    }
+    
     function updateButtonVisibility() {
-        if (isEditMode) {
+        if (isPreviewMode) {
+            // In preview mode, hide all header buttons since preview has its own action buttons
+            refreshBtn.style.display = 'none';
+            editBtn.style.display = 'none';
+            updateBtn.style.display = 'none';
+            stopEditingBtn.style.display = 'none';
+        } else if (isEditMode) {
             refreshBtn.style.display = 'none';
             editBtn.style.display = 'none';
             updateBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'inline-block';
+            stopEditingBtn.style.display = 'inline-block';
         } else {
             refreshBtn.style.display = 'inline-block';
             editBtn.style.display = 'inline-block';
             updateBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
+            stopEditingBtn.style.display = 'none';
         }
     }
     
     function showEditMode() {
+        isEditMode = true;
+        isPreviewMode = false;
+        updateButtonVisibility();
+        
+        // Get the current content to edit (might be from localStorage draft)
+        const savedDraft = localStorage.getItem('resume-draft');
+        let editContent = currentMarkdown;
+        
         resumeContainer.innerHTML = `
             <div class="edit-mode" style="display: block;">
-                <textarea class="edit-textarea" id="markdown-editor" placeholder="Enter resume markdown here...">${currentMarkdown}</textarea>
+                <textarea class="edit-textarea" id="markdown-editor" placeholder="Enter resume markdown here...">${editContent}</textarea>
                 <div id="save-status" class="save-status" style="display: none;"></div>
             </div>
         `;
         
-        // Set up auto-save to localStorage while editing
         const textarea = document.getElementById('markdown-editor');
         if (textarea) {
-            // Check for existing draft
-            const savedDraft = localStorage.getItem('resume-draft');
+            // Check for existing draft and offer to restore it
             if (savedDraft && savedDraft !== currentMarkdown) {
                 if (confirm('Found unsaved changes. Would you like to restore them?')) {
                     textarea.value = savedDraft;
@@ -276,6 +370,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Convert links [text](url)
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
         
+        // Handle line breaks: two or more spaces at end of line + newline = <br>
+        html = html.replace(/ {2,}\n/g, '<br>\n');
+        
         // Split into lines for list processing
         let lines = html.split('\n');
         let inList = false;
@@ -340,12 +437,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fix empty paragraphs
         html = html.replace(/<p>\s*<\/p>/g, '');
         
-        // Handle line breaks within paragraphs
-        html = html.replace(/\n(?!<)/g, '<br>');
+        // Convert remaining single newlines to <br> (but not after closing tags or before opening tags)
+        html = html.replace(/(?<!>)\n(?!<)/g, '<br>\n');
         
-        // Clean up extra spacing
-        html = html.replace(/(<br>)+<\/p>/g, '</p>');
-        html = html.replace(/<p>(<br>)+/g, '<p>');
+        // Clean up extra spacing around <br> tags
+        html = html.replace(/(<br>\s*)+<\/p>/g, '</p>');
+        html = html.replace(/<p>(\s*<br>\s*)+/g, '<p>');
         
         return html;
     }
