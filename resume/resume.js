@@ -106,7 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         document.getElementById('continue-editing-btn').addEventListener('click', () => {
-            showEditMode();
+            // Continue editing with the current preview content, no prompts needed
+            showEditModeWithContent(previewMarkdown);
         });
         
         document.getElementById('discard-changes-btn').addEventListener('click', () => {
@@ -205,6 +206,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     textarea.value = savedDraft;
                 }
             }
+            
+            // Save to localStorage on input
+            textarea.addEventListener('input', function() {
+                localStorage.setItem('resume-draft', textarea.value);
+                updateUnsavedIndicator(textarea.value !== currentMarkdown);
+            });
+            
+            // Add keyboard shortcut for saving (Ctrl+S or Cmd+S)
+            textarea.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveResume();
+                }
+            });
+        }
+    }
+    
+    function showEditModeWithContent(content) {
+        isEditMode = true;
+        isPreviewMode = false;
+        updateButtonVisibility();
+        
+        resumeContainer.innerHTML = `
+            <div class="edit-mode" style="display: block;">
+                <textarea class="edit-textarea" id="markdown-editor" placeholder="Enter resume markdown here...">${content}</textarea>
+                <div id="save-status" class="save-status" style="display: none;"></div>
+            </div>
+        `;
+        
+        const textarea = document.getElementById('markdown-editor');
+        if (textarea) {
+            // Update localStorage with current content
+            localStorage.setItem('resume-draft', content);
+            updateUnsavedIndicator(content !== currentMarkdown);
             
             // Save to localStorage on input
             textarea.addEventListener('input', function() {

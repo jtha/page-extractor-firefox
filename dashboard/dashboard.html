@@ -2,25 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Session</title>
+  <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../styles/nav.css">
-  <link rel="stylesheet" href="session.css">
+  <link rel="stylesheet" href="dashboard.css">
   <script src="../shared/navigation.js"></script>
 </head>
 <body>
   <!-- Navigation will be injected here -->
   <div class="container">
     <header>
-      <h1>Session</h1>
-      <button id="clear-session-btn">Clear All Session Data</button>
+      <h1>Dashboard</h1>
     </header>
-    <main id="job-list-container"></main>
+    <main id="dashboard-container">
+      <!-- Dashboard content will go here -->
+    </main>
   </div>
   <script>
     // Initialize navigation for this page
-    initNavigation('session');
+    initNavigation('dashboard');
   </script>
-  <script src="session.js"></script>
+  <script src="dashboard.js"></script>
 </body>
 </html>

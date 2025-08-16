@@ -6,22 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../styles/nav.css">
   <link rel="stylesheet" href="history.css">
+  <script src="../shared/navigation.js"></script>
   <style>
     .hidden { display: none; }
   </style>
 </head>
 <body>
-  <nav class="top-nav" aria-label="Primary">
-    <div class="nav-inner">
-      <div class="brand">Job Search Copilot</div>
-      <ul class="nav-links" role="list">
-        <li><a href="../history/history.html" aria-current="page">History</a></li>
-        <li><a href="../session/session.html">Session</a></li>
-        <li><a href="../resume/resume.html">Resume</a></li>
-      </ul>
-      <div class="spacer" aria-hidden="true"></div>
-    </div>
-  </nav>
+  <!-- Navigation will be injected here -->
   <div class="container">
     <header>
       <h1>History</h1>
@@ -33,6 +24,10 @@
     </header>
     <main id="history-list-container"></main>
   </div>
+  <script>
+    // Initialize navigation for this page
+    initNavigation('history');
+  </script>
   <script src="history.js"></script>
 </body>
 </html>

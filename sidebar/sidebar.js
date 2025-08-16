@@ -1,8 +1,6 @@
 const extractBtn = document.getElementById('extract-btn');
 const statusDiv = document.getElementById('status-message');
-const openHistoryBtn = document.getElementById('open-history-btn');
-const openSessionBtn = document.getElementById('open-session-btn');
-const openResumeBtn = document.getElementById('open-resume-btn');
+const openDashboardBtn = document.getElementById('open-dashboard-btn');
 const creditsEl = document.getElementById('remaining-credits');
 
 extractBtn.addEventListener('click', async () => {
@@ -55,9 +53,7 @@ function openRelativePage(path) {
   browser.tabs.create({ url });
 }
 
-openHistoryBtn?.addEventListener('click', () => openRelativePage('history/history.html'));
-openSessionBtn?.addEventListener('click', () => openRelativePage('session/session.html'));
-openResumeBtn?.addEventListener('click', () => openRelativePage('resume/resume.html'));
+openDashboardBtn?.addEventListener('click', () => openRelativePage('dashboard/dashboard.html'));
 
 // Fetch and display remaining OpenRouter credits
 async function refreshCredits() {
