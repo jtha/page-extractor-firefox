@@ -68,6 +68,11 @@ h1 {
   cursor: pointer; 
 }
 
+/* When expanded, remove cursor pointer from the entire row */
+.job-row.expanded {
+  cursor: default;
+}
+
 .job-row.expanded { 
   box-shadow: 0 6px 16px rgba(0,0,0,0.12); 
   background-color: #f9fbff; 
@@ -95,6 +100,11 @@ h1 {
   justify-content: space-between; 
   align-items: center; 
   gap: 12px; 
+}
+
+/* When job row is expanded, only the header should show cursor pointer */
+.job-row.expanded .row-header {
+  cursor: pointer;
 }
 
 .row-title { 

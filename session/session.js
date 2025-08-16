@@ -254,155 +254,166 @@ function renderJob(task) {
       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
         return;
       }
+      
       const isVisible = detailsContainer.style.display === 'block';
+      
+      // If the row is expanded, only allow collapse when clicking on header area
       if (isVisible) {
+        // Check if the click was on the header or its children
+        const clickedHeader = e.target === header || header.contains(e.target);
+        if (!clickedHeader) {
+          return; // Don't collapse if clicked outside header area
+        }
+        
         detailsContainer.style.display = 'none';
         jobRow.classList.remove('expanded');
-      } else {
-        if (!detailsContainer.innerHTML) {
-          task.data.task_id = task.id;
-          detailsContainer.innerHTML = renderJobDetails(task.data);
-          const uniquePrefix = `details-${task.id}-${task.data.job_id || 'no-job-id'}`;
-          const copyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
-          const descriptionEl = document.getElementById(`${uniquePrefix}-desc`);
-          const regenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
-          const regenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
-          const appliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
-
-          if (copyBtn && descriptionEl) {
-            copyBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              navigator.clipboard.writeText(descriptionEl.textContent).then(() => {
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-              }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                copyBtn.textContent = 'Error!';
-              });
-            });
-          }
-
-          if (regenBtn && task.data?.job_id) {
-            regenBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              if (regenBtn.disabled) return;
-              regenBtn.disabled = true;
-              const originalText = regenBtn.textContent;
-              regenBtn.textContent = 'Regenerating...';
-              regenStatusEl.textContent = '';
-              try {
-                const resp = await regenerateAssessment(task.data.job_id);
-                if (resp.status === 'success' && resp.data) {
-                  task.data = resp.data;
-                  task.data.task_id = task.id;
-                  await browser.storage.local.set({ [task.id]: task });
-                  detailsContainer.innerHTML = renderJobDetails(task.data);
-                  const newCopyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
-                  const newDescriptionEl = document.getElementById(`${uniquePrefix}-desc`);
-                  const newRegenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
-                  const newRegenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
-                  const newAppliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
-                  if (newCopyBtn && newDescriptionEl) {
-                    newCopyBtn.addEventListener('click', (e2) => {
-                      e2.stopPropagation();
-                      navigator.clipboard.writeText(newDescriptionEl.textContent).then(() => {
-                        newCopyBtn.textContent = 'Copied!';
-                        setTimeout(() => { newCopyBtn.textContent = 'Copy'; }, 2000);
-                      }).catch(err => {
-                        console.error('Failed to copy text: ', err);
-                        newCopyBtn.textContent = 'Error!';
-                      });
-                    });
-                  }
-                  if (newRegenBtn) {
-                    newRegenBtn.addEventListener('click', (e3) => {
-                      e3.stopPropagation();
-                    });
-                  }
-      if (newAppliedBtn && task.data?.job_id) {
-                    newAppliedBtn.addEventListener('click', async (e4) => {
-                      e4.stopPropagation();
-                      if (newAppliedBtn.disabled) return;
-                      const originalText2 = newAppliedBtn.textContent;
-                      const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
-                      newAppliedBtn.disabled = true;
-                      newAppliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
-                      try {
-                        if (currentlyApplied) {
-                          await unmarkApplied(task.data.job_id);
-                          task.data.job_applied = 0;
-                          newAppliedBtn.textContent = 'Applied to Job';
-        jobRow.classList.remove('applied');
-                        } else {
-                          await markApplied(task.data.job_id);
-                          task.data.job_applied = 1;
-                          newAppliedBtn.textContent = 'Unmark Applied';
-        jobRow.classList.add('applied');
-                        }
-                        await browser.storage.local.set({ [task.id]: task });
-                      } catch (err) {
-                        console.error('Toggle applied failed', err);
-                        newAppliedBtn.textContent = 'Error';
-                        setTimeout(() => { newAppliedBtn.textContent = originalText2; newAppliedBtn.disabled = false; }, 3000);
-                      } finally {
-                        newAppliedBtn.disabled = false;
-                      }
-                    });
-                  }
-                  const updatedFr = computeFractionsFromTaskData(task.data);
-                  const reqEl = jobRow.querySelector('.fraction-req');
-                  const addEl = jobRow.querySelector('.fraction-add');
-                  updateFractionEl(reqEl, 'Req', updatedFr.req.matched, updatedFr.req.total);
-                  updateFractionEl(addEl, 'Add', updatedFr.add.matched, updatedFr.add.total);
-                  regenStatusEl.textContent = 'Updated';
-                } else {
-                  regenStatusEl.textContent = 'Failed';
-                }
-              } catch (err) {
-                console.error('Regenerate failed', err);
-                regenStatusEl.textContent = 'Error';
-              } finally {
-                regenBtn.disabled = false;
-                regenBtn.textContent = originalText;
-                setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
-              }
-            });
-          }
-
-    if (appliedBtn && task.data?.job_id) {
-            appliedBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              if (appliedBtn.disabled) return;
-              const originalText = appliedBtn.textContent;
-              const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
-              appliedBtn.disabled = true;
-              appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
-              try {
-                if (currentlyApplied) {
-                  await unmarkApplied(task.data.job_id);
-                  task.data.job_applied = 0;
-                  appliedBtn.textContent = 'Applied to Job';
-      jobRow.classList.remove('applied');
-                } else {
-                  await markApplied(task.data.job_id);
-                  task.data.job_applied = 1;
-                  appliedBtn.textContent = 'Unmark Applied';
-      jobRow.classList.add('applied');
-                }
-                await browser.storage.local.set({ [task.id]: task });
-              } catch (err) {
-                console.error('Toggle applied failed', err);
-                appliedBtn.textContent = 'Error';
-                setTimeout(() => { appliedBtn.textContent = originalText; appliedBtn.disabled = false; }, 3000);
-              } finally {
-                appliedBtn.disabled = false;
-              }
-            });
-          }
-        }
-        detailsContainer.style.display = 'block';
-        jobRow.classList.add('expanded');
+        return;
       }
+      
+      // If not expanded, clicking anywhere in the row expands it
+      if (!detailsContainer.innerHTML) {
+        task.data.task_id = task.id;
+        detailsContainer.innerHTML = renderJobDetails(task.data);
+        const uniquePrefix = `details-${task.id}-${task.data.job_id || 'no-job-id'}`;
+        const copyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
+        const descriptionEl = document.getElementById(`${uniquePrefix}-desc`);
+        const regenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
+        const regenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
+        const appliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
+
+        if (copyBtn && descriptionEl) {
+          copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(descriptionEl.textContent).then(() => {
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            }).catch(err => {
+              console.error('Failed to copy text: ', err);
+              copyBtn.textContent = 'Error!';
+            });
+          });
+        }
+
+        if (regenBtn && task.data?.job_id) {
+          regenBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (regenBtn.disabled) return;
+            regenBtn.disabled = true;
+            const originalText = regenBtn.textContent;
+            regenBtn.textContent = 'Regenerating...';
+            regenStatusEl.textContent = '';
+            try {
+              const resp = await regenerateAssessment(task.data.job_id);
+              if (resp.status === 'success' && resp.data) {
+                task.data = resp.data;
+                task.data.task_id = task.id;
+                await browser.storage.local.set({ [task.id]: task });
+                detailsContainer.innerHTML = renderJobDetails(task.data);
+                const newCopyBtn = document.getElementById(`${uniquePrefix}-copy-btn`);
+                const newDescriptionEl = document.getElementById(`${uniquePrefix}-desc`);
+                const newRegenBtn = document.getElementById(`${uniquePrefix}-regen-btn`);
+                const newRegenStatusEl = document.getElementById(`${uniquePrefix}-regen-status`);
+                const newAppliedBtn = document.getElementById(`${uniquePrefix}-applied-btn`);
+                if (newCopyBtn && newDescriptionEl) {
+                  newCopyBtn.addEventListener('click', (e2) => {
+                    e2.stopPropagation();
+                    navigator.clipboard.writeText(newDescriptionEl.textContent).then(() => {
+                      newCopyBtn.textContent = 'Copied!';
+                      setTimeout(() => { newCopyBtn.textContent = 'Copy'; }, 2000);
+                    }).catch(err => {
+                      console.error('Failed to copy text: ', err);
+                      newCopyBtn.textContent = 'Error!';
+                    });
+                  });
+                }
+                if (newRegenBtn) {
+                  newRegenBtn.addEventListener('click', (e3) => {
+                    e3.stopPropagation();
+                  });
+                }
+                if (newAppliedBtn && task.data?.job_id) {
+                  newAppliedBtn.addEventListener('click', async (e4) => {
+                    e4.stopPropagation();
+                    if (newAppliedBtn.disabled) return;
+                    const originalText2 = newAppliedBtn.textContent;
+                    const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
+                    newAppliedBtn.disabled = true;
+                    newAppliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
+                    try {
+                      if (currentlyApplied) {
+                        await unmarkApplied(task.data.job_id);
+                        task.data.job_applied = 0;
+                        newAppliedBtn.textContent = 'Applied to Job';
+                        jobRow.classList.remove('applied');
+                      } else {
+                        await markApplied(task.data.job_id);
+                        task.data.job_applied = 1;
+                        newAppliedBtn.textContent = 'Unmark Applied';
+                        jobRow.classList.add('applied');
+                      }
+                      await browser.storage.local.set({ [task.id]: task });
+                    } catch (err) {
+                      console.error('Toggle applied failed', err);
+                      newAppliedBtn.textContent = 'Error';
+                      setTimeout(() => { newAppliedBtn.textContent = originalText2; newAppliedBtn.disabled = false; }, 3000);
+                    } finally {
+                      newAppliedBtn.disabled = false;
+                    }
+                  });
+                }
+                const updatedFr = computeFractionsFromTaskData(task.data);
+                const reqEl = jobRow.querySelector('.fraction-req');
+                const addEl = jobRow.querySelector('.fraction-add');
+                updateFractionEl(reqEl, 'Req', updatedFr.req.matched, updatedFr.req.total);
+                updateFractionEl(addEl, 'Add', updatedFr.add.matched, updatedFr.add.total);
+                regenStatusEl.textContent = 'Updated';
+              } else {
+                regenStatusEl.textContent = 'Failed';
+              }
+            } catch (err) {
+              console.error('Regenerate failed', err);
+              regenStatusEl.textContent = 'Error';
+            } finally {
+              regenBtn.disabled = false;
+              regenBtn.textContent = originalText;
+              setTimeout(() => { regenStatusEl.textContent = ''; }, 4000);
+            }
+          });
+        }
+
+        if (appliedBtn && task.data?.job_id) {
+          appliedBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (appliedBtn.disabled) return;
+            const originalText = appliedBtn.textContent;
+            const currentlyApplied = task.data.job_applied === 1 || task.data.job_applied === true;
+            appliedBtn.disabled = true;
+            appliedBtn.textContent = currentlyApplied ? 'Unmarking...' : 'Marking...';
+            try {
+              if (currentlyApplied) {
+                await unmarkApplied(task.data.job_id);
+                task.data.job_applied = 0;
+                appliedBtn.textContent = 'Applied to Job';
+                jobRow.classList.remove('applied');
+              } else {
+                await markApplied(task.data.job_id);
+                task.data.job_applied = 1;
+                appliedBtn.textContent = 'Unmark Applied';
+                jobRow.classList.add('applied');
+              }
+              await browser.storage.local.set({ [task.id]: task });
+            } catch (err) {
+              console.error('Toggle applied failed', err);
+              appliedBtn.textContent = 'Error';
+              setTimeout(() => { appliedBtn.textContent = originalText; appliedBtn.disabled = false; }, 3000);
+            } finally {
+              appliedBtn.disabled = false;
+            }
+          });
+        }
+      }
+      detailsContainer.style.display = 'block';
+      jobRow.classList.add('expanded');
     });
   }
 
